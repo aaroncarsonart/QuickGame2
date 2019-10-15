@@ -2,10 +2,16 @@ package com.aaroncarsonart.quickgame2;
 
 import com.sun.prism.image.ViewPort;
 
+import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.GridLayout;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import java.util.function.BiFunction;
 
 public class CharGrid {
 
@@ -37,6 +43,11 @@ public class CharGrid {
         jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
+    public void addMouseListener(int y, int x, MouseListener mouseListener) {
+        JComponent jPanel = textGrid[y][x].getJPanel();
+        jPanel.addMouseListener(mouseListener);
+    }
+
     public int getWidth() {
         return width;
     }
@@ -53,6 +64,16 @@ public class CharGrid {
     public void setForeground(Color color, int y, int x) {
         CharPanel panel = textGrid[y][x];
         panel.setForeground(color);
+    }
+
+    public Color getBackground(int y, int x) {
+        CharPanel panel = textGrid[y][x];
+        return panel.getBgColor();
+    }
+
+    public Color getForeground(int y, int x) {
+        CharPanel panel = textGrid[y][x];
+        return panel.getFgColor();
     }
 
     public void setColors(Color bg, Color fg, int y, int x) {
@@ -192,8 +213,15 @@ public class CharGrid {
         }
     }
 
-    public void highlight(int vy, int vx, int vh, int vw) {
+    public void fillRect(char c, Color bg, Color fg, int vy, int vx, int vh, int vw) {
+        for (int y = vy; y < vy + vh; y++) {
+            for (int x = vx; x < vx + vw; x++) {
+                this.setChar(' ', y, x);
+                this.setBackground(bg, y, x);
+                this.setForeground(fg, y, x);
 
+            }
+        }
     }
 
 }
