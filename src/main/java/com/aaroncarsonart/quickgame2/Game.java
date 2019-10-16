@@ -31,6 +31,9 @@ public class Game {
 
     boolean[][] highlight = new boolean[WINDOW_HEIGHT][WINDOW_WIDTH];
     boolean ignoreInvertOnMouseExit = false;
+    boolean endGameTurn = false;
+    boolean toggleHUD = true;
+    private int turnCounter = 1;
 
     int treasure = 0;
 
@@ -141,6 +144,9 @@ public class Game {
                     case KeyEvent.VK_C:
                         playerAction = PlayerAction.TAB;
                         break;
+                    case KeyEvent.VK_E:
+                        playerAction = PlayerAction.END_TURN;
+                        break;
                     default:
                         playerAction = PlayerAction.UNKNOWN;
                         break;
@@ -156,15 +162,28 @@ public class Game {
     }
 
     public void redrawScreen() {
-        drawMap();
+        if (endGameTurn) {
+            drawNextTurnScreen();
+            endGameTurn = false;
+        } else {
+            drawMap();
+        }
         charGrid.getJFrame().repaint();
     }
 
     public void respondToUserInput() {
-        if (playerAction == PlayerAction.TAB) {
-            selectedMember ++;
+        if (playerAction == PlayerAction.CANCEL) {
+            toggleHUD = !toggleHUD;
+        } else if (playerAction == PlayerAction.TAB) {
+            selectedMember++;
             if (selectedMember >= squadMembers.size()) {
                 selectedMember = 0;
+            }
+        } else if (playerAction == PlayerAction.END_TURN) {
+            endGameTurn = true;
+            turnCounter += 1;
+            for (SquadMember member : squadMembers) {
+                member.energy = member.speed;
             }
         } else {
             movePlayer();
@@ -194,15 +213,38 @@ public class Game {
                 nextPos = currentPos;
                 break;
         }
-        if (withinBounds(nextPos, height, width) && !occupied(nextPos)) {
-            entityMap[currentPos.y()][currentPos.x()] = '\u0000';
-            entityMap[nextPos.y()][nextPos.x()] = activeMember.numeral;
-            activeMember.position = nextPos;
 
+        // TODO make every action cost movement points
+        // (empty 1, grass 2, water 3, and treasure 4)
+
+        if (withinBounds(nextPos, height, width)
+                && !occupied(nextPos)) {
+
+            // calculate movement cost
+            int movementCost = 0;
             // check for treasure
-            if (gameMap[nextPos.y()][nextPos.x()] == '$') {
-                gameMap[nextPos.y()][nextPos.x()] = '.';
-                treasure += 1;
+            if (gameMap[nextPos.y()][nextPos.x()] == '~') {
+                movementCost = 3;
+            } else if (gameMap[nextPos.y()][nextPos.x()] == '"') {
+                movementCost = 0;
+            }
+            else if (gameMap[nextPos.y()][nextPos.x()] == '$') {
+                movementCost = 4;
+            } else {
+                movementCost = 1;
+            }
+
+            if (activeMember.energy - movementCost >= 0) {
+                activeMember.energy -= movementCost;
+
+                if (gameMap[nextPos.y()][nextPos.x()] == '$') {
+                    gameMap[nextPos.y()][nextPos.x()] = '.';
+                    treasure += 1;
+                }
+
+                entityMap[currentPos.y()][currentPos.x()] = '\u0000';
+                entityMap[nextPos.y()][nextPos.x()] = activeMember.numeral;
+                activeMember.position = nextPos;
             }
         }
     }
@@ -228,7 +270,7 @@ public class Game {
         // -------------------------------------------------------------
 
         Maze maze = Maze.generateCellularAutomataRoom(width, height);
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 6; i++) {
             maze.cellularAutomataIteration();
             maze.connectDisconnectedComponents();
         }
@@ -243,23 +285,6 @@ public class Game {
                 }
             }
         }
-
-//        // create water
-//        maze = Maze.generateCellularAutomataRoom(width, height);
-//        for (int i = 0; i < 3; i++) {
-//            maze.cellularAutomataIteration();
-//            maze.connectDisconnectedComponents();
-//        }
-//        for (int y = 0; y < height; y++) {
-//            for (int x = 0; x < width; x++) {
-//                byte cell = maze.getCell(x, y);
-//                char sprite = cell == Maze.WALL ? '~' : '.';
-//
-//                if (gameMap[y][x] == '.' && sprite == '~') {
-//                    gameMap[y][x] = '~';
-//                }
-//            }
-//        }
 
         // ------------------------------------------------------
         // create grass
@@ -293,22 +318,6 @@ public class Game {
         count = Math.max( 1, 10);
         maxNeighbors = 3 + RNG.nextInt(3);
         addBlobsOfTiles(tile, openPaths, count, maxNeighbors);
-
-//        maze = Maze.generateCellularAutomataRoom(width, height);
-//        for (int i = 0; i < 3; i++) {
-//            maze.cellularAutomataIteration();
-//            maze.connectDisconnectedComponents();
-//        }
-//        for (int y = 0; y < height; y++) {
-//            for (int x = 0; x < width; x++) {
-//                byte cell = maze.getCell(x, y);
-//                char sprite = cell == Maze.WALL ? '#' : '.';
-//
-//                if (gameMap[y][x] == '.' && sprite == '.') {
-//                    gameMap[y][x] = '"';
-//                }
-//            }
-//        }
 
         // ------------------------------------------------------
         // add treasure
@@ -350,6 +359,9 @@ public class Game {
             SquadMember squadMember = new SquadMember();
             squadMember.numeral = Character.forDigit(i, 10);
             squadMember.position = openPath;
+            squadMember.speed = 20;
+            squadMember.energy = squadMember.speed;
+
             squadMembers.add(squadMember);
             entityMap[openPath.y()][openPath.x()] = squadMember.numeral;
         }
@@ -385,6 +397,38 @@ public class Game {
         return x >= 0 && x < width && y >= 0 && y < height;
     }
 
+    public void drawNextTurnScreen() {
+//        // ------------------------------------------------------------------
+//        // Clear ScreenBuffer
+//        // ------------------------------------------------------------------
+//
+//        for (int y = 0; y < WINDOW_HEIGHT; y++) {
+//            for (int x = 0; x < WINDOW_WIDTH; x++) {
+//                charGrid.setChar(' ', y, x);
+//                if (highlight[y][x]) {
+//                    charGrid.setColors(Color.WHITE, Color.BLACK, y, x);
+//                } else {
+//                    charGrid.setColors(Color.BLACK, Color.WHITE, y, x);
+//                }
+//            }
+//        }
+//
+//        charGrid.drawBoxBorders(0, 0, WINDOW_HEIGHT - 1, WINDOW_WIDTH - 1);
+//        charGrid.drawBoxCorners(0, 0, WINDOW_HEIGHT - 1, WINDOW_WIDTH - 1);
+
+        int cw = 12;
+        int ch = 2;
+        int cx = WINDOW_WIDTH / 2 - cw / 2;
+        int cy = WINDOW_HEIGHT / 2 - ch / 2;
+
+        charGrid.fillRect(' ', Color.BLACK, Color.BLACK, cy, cx, ch, cw);
+        charGrid.drawBoxBorders(cy, cx, ch, cw);
+        charGrid.drawBoxCorners(cy, cx, ch, cw);
+
+        charGrid.drawText("Next Turn", cy + 1, cx + 2);
+
+    }
+
     public void drawMap() {
 
         // ------------------------------------------------------------------
@@ -396,7 +440,11 @@ public class Game {
 //                charGrid.setChar(' ', y, x);
 //                charGrid.setColors(Color.BLACK, Color.WHITE, y, x);
                 charGrid.setChar('#', y, x);
-                charGrid.setColors(DARK_BROWN, BROWN, y, x);
+                if (highlight[y][x]) {
+                    charGrid.setColors(BROWN, DARK_BROWN, y, x);
+                } else {
+                    charGrid.setColors(DARK_BROWN, BROWN, y, x);
+                }
             }
         }
 
@@ -481,26 +529,44 @@ public class Game {
         charGrid.drawBoxBorders(0, 0, WINDOW_HEIGHT - 1, WINDOW_WIDTH - 1);
         charGrid.drawBoxCorners(0, 0, WINDOW_HEIGHT - 1, WINDOW_WIDTH - 1);
 
-        int wWidth = 15;
-        int wHeight = 5;
-        int wx = WINDOW_WIDTH - wWidth;
-        int wy = WINDOW_HEIGHT - wHeight;
-        charGrid.fillRect(' ', Color.BLACK, Color.WHITE, wy, wx, wHeight, wWidth);
-        charGrid.drawBoxBorders(wy, wx, wHeight - 1, wWidth - 1);
-        charGrid.drawBoxCorners(wy, wx, wHeight - 1, wWidth - 1);
+        if (toggleHUD) {
+            int wWidth = 15;
+            int wHeight = 5;
+            int wx = WINDOW_WIDTH - wWidth;
+            int wy = WINDOW_HEIGHT - wHeight;
+            charGrid.fillRect(' ', Color.BLACK, Color.WHITE, wy, wx, wHeight, wWidth);
+            charGrid.drawBoxBorders(wy, wx, wHeight - 1, wWidth - 1);
+            charGrid.drawBoxCorners(wy, wx, wHeight - 1, wWidth - 1);
 
-        int cursor = 0;
-        int tx = wx + 1;
-        int ty = wy + 1;
-        String text = "Treasure: ";
-        charGrid.drawText(text, Color.WHITE, ty, tx + cursor);
-        cursor += text.length();
-        text = String.valueOf(treasure);
-        charGrid.drawText(text, Color.YELLOW, ty, tx + cursor);
+            int cursor = 0;
+            int tx = wx + 1;
+            int ty = wy + 1;
 
+            String text = "Treasure: ";
+            charGrid.drawText(text, Color.WHITE, ty, tx + cursor);
+            cursor += text.length();
+            text = String.valueOf(treasure);
+            charGrid.drawText(text, Color.YELLOW, ty, tx + cursor);
+
+            cursor = 0;
+            ty += 1;
+            text = "Energy: ";
+            charGrid.drawText(text, Color.WHITE, ty, tx + cursor);
+            cursor += text.length();
+
+            SquadMember activeMember = squadMembers.get(selectedMember);
+            text = String.valueOf(activeMember.energy);
+            charGrid.drawText(text, Color.GREEN, ty, tx + cursor);
+
+            cursor = 0;
+            ty += 1;
+            text = "Turn: ";
+            charGrid.drawText(text, Color.WHITE, ty, tx + cursor);
+            cursor += text.length();
+            text = String.valueOf(turnCounter);
+            charGrid.drawText(text, Color.CYAN, ty, tx + cursor);
+        }
     }
-
-
 
     List<Position2D> treasures = new ArrayList<>();
 
