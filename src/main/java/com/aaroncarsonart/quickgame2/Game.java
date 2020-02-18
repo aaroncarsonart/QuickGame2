@@ -1,10 +1,14 @@
 package com.aaroncarsonart.quickgame2;
 
+import com.aaroncarsonart.quickgame2.hero.Hero;
+import com.aaroncarsonart.quickgame2.menu.BasicVerticalMenuView;
 import com.aaroncarsonart.quickgame2.menu.Callback;
+import com.aaroncarsonart.quickgame2.menu.CenterMenuView;
 import com.aaroncarsonart.quickgame2.menu.Menu;
 import com.aaroncarsonart.quickgame2.menu.MenuItem;
 import com.aaroncarsonart.quickgame2.menu.MenuLayout;
 import com.aaroncarsonart.quickgame2.menu.MenuView;
+import com.aaroncarsonart.quickgame2.menu.StatusMenuView;
 import imbroglio.Direction;
 import imbroglio.Maze;
 import imbroglio.Position2D;
@@ -61,7 +65,10 @@ public class Game {
 
     private Menu moveMenu;
     private Menu mainMenu;
+    private Menu statusMenu;
     private Stack<Menu> menuList;
+
+    private Hero hero;
 
     private static final Random RANDOM = Constants.RNG;
 
@@ -135,10 +142,9 @@ public class Game {
 
         player = openPaths.remove(0);
 
-
-        // ------------------------------------------------
-        // Setup mainMenu
-        // ------------------------------------------------
+        // ====================================================================
+        // SETUP MENUS
+        // ====================================================================
         Callback menuCancelCallback = () -> {
             menuList.pop();
             if (menuList.empty()) {
@@ -146,8 +152,18 @@ public class Game {
             }
         };
 
-        mainMenu = new Menu(new CenterMenuView(), MenuLayout.VERTICAL, menuCancelCallback);
-        mainMenu.addMenuItem(new MenuItem("Status", () -> {}));
+        // ------------------------------------------------
+        // Setup statusMenu
+        // ------------------------------------------------
+        statusMenu = new Menu(new StatusMenuView(this), MenuLayout.VERTICAL, menuCancelCallback);
+
+
+        // ------------------------------------------------
+        // Setup mainMenu
+        // ------------------------------------------------
+
+        mainMenu = new Menu(new CenterMenuView(this), MenuLayout.VERTICAL, menuCancelCallback);
+        mainMenu.addMenuItem(new MenuItem("Status", () -> menuList.push(statusMenu)));
         mainMenu.addMenuItem(new MenuItem("Inventory", () -> {}));
         mainMenu.addMenuItem(new MenuItem("Equipment", () -> {}));
         mainMenu.addMenuItem(new MenuItem("Save", () -> {}));
@@ -159,191 +175,13 @@ public class Game {
         // ------------------------------------------------
 
         menuList = new Stack<>();
-        Position2D moveMenuOrigin = new Position2D(0,0);
-        moveMenu = new Menu(new BasicVerticalMenuView(moveMenuOrigin), MenuLayout.VERTICAL, menuCancelCallback);
+        Position2D moveMenuOrigin = new Position2D(2,2);
+        MenuView moveMenuView = new BasicVerticalMenuView(this, moveMenuOrigin, true);
+        moveMenu = new Menu(moveMenuView, MenuLayout.VERTICAL, menuCancelCallback);
         moveMenu.addMenuItem(new MenuItem("Move UP", () -> moveMap(PlayerAction.UP)));
         moveMenu.addMenuItem(new MenuItem("Move DOWN", () -> moveMap(PlayerAction.DOWN)));
         moveMenu.addMenuItem(new MenuItem("Move RIGHT", () -> moveMap(PlayerAction.RIGHT)));
         moveMenu.addMenuItem(new MenuItem("Move LEFT", () -> moveMap(PlayerAction.LEFT)));
-    }
-
-    /**
-     * Draws a borderless, vertical list menu in the upper left hand corner.
-     */
-    public class BasicVerticalMenuView implements MenuView {
-        Position2D origin;
-
-        BasicVerticalMenuView(Position2D origin) {
-            this.origin = origin;
-        }
-
-        public void render(Graphics2D g, Menu menu) {
-            List<MenuItem> items = menu.getMenuItems();
-            int height = items.size();
-            int width = 0;
-            for (int i = 0; i < items.size(); i++) {
-                width = Math.max(width, items.get(i).getLabel().length());
-            }
-//            for (int x = 0; x < width; x++) {
-//                for (int y = 0; y < height; y++) {
-//                    drawChar(g, " ", x, y, Color.BLACK, Color.BLACK);
-//                }
-//            }
-            int selectedIndex = menu.getIndex();
-            for (int i = 0; i < items.size(); i++) {
-                MenuItem item = items.get(i);
-                String label = item.getLabel();
-                for (int j = 0; j < width; j++) {
-
-                    // get character to print
-                    char c;
-                    if (j < label.length()) {
-                        c = label.charAt(j);
-                    } else {
-                        c = ' ';
-                    }
-
-                    // get colors
-                    Color bg, fg;
-                    if (i == selectedIndex) {
-                        bg = Color.WHITE;
-                        fg = Color.BLACK;
-                    } else {
-                        bg = Color.BLACK;
-                        fg = Color.WHITE;
-                    }
-
-                    int x = origin.x() + j;
-                    int y = origin.y() + i;
-
-                    // draw character
-                    drawChar(g, c, x, y, bg, fg);
-                }
-            }
-        }
-    }
-
-    /**
-     * Draws a borderless, vertical list menu in the upper left hand corner.
-     */
-    public class BasicHorizontalMenuView implements MenuView {
-        Position2D origin;
-
-        BasicHorizontalMenuView(Position2D origin) {
-            this.origin = origin;
-        }
-
-        public void render(Graphics2D g, Menu menu) {
-            List<MenuItem> items = menu.getMenuItems();
-            int height = items.size();
-            int width = 0;
-            for (int i = 0; i < items.size(); i++) {
-                width = Math.max(width, items.get(i).getLabel().length());
-            }
-//            for (int x = 0; x < width; x++) {
-//                for (int y = 0; y < height; y++) {
-//                    drawChar(g, " ", x, y, Color.BLACK, Color.BLACK);
-//                }
-//            }
-            int selectedIndex = menu.getIndex();
-            for (int i = 0; i < items.size(); i++) {
-                MenuItem item = items.get(i);
-                String label = item.getLabel();
-                for (int j = 0; j < width; j++) {
-
-                    // get character to print
-                    char c;
-                    if (j < label.length()) {
-                        c = label.charAt(j);
-                    } else {
-                        c = ' ';
-                    }
-
-                    // get colors
-                    Color bg, fg;
-                    if (i == selectedIndex) {
-                        bg = Color.WHITE;
-                        fg = Color.BLACK;
-                    } else {
-                        bg = Color.BLACK;
-                        fg = Color.WHITE;
-                    }
-
-                    int x = origin.x() + j;
-                    int y = origin.y() + i;
-
-                    // draw character
-                    drawChar(g, c, x, y, bg, fg);
-                }
-            }
-        }
-    }
-
-    /**
-     * Draws a centered Menu with a border.
-     */
-    public class CenterMenuView implements MenuView {
-        public void render(Graphics2D g, Menu menu) {
-            int menuWidth = 0;
-            for (MenuItem menuItem : menu.getMenuItems()) {
-                menuWidth = Math.max(menuWidth, menuItem.getLabel().length());
-            }
-            int menuHeight = menu.getMenuItems().size();
-
-            int mx = (gridWidth - menuWidth) / 2;
-            int my = (gridHeight - menuHeight) / 2;
-
-            int menuCursor = menu.getIndex();
-
-            // ------------------------------------------------
-            // draw oldMenuList contents
-            // ------------------------------------------------
-            for (int y = 0; y < menuHeight; y++) {
-                for (int x = 0; x < menuWidth; x++) {
-                    Color bg = Color.BLACK;
-                    Color fg = Color.WHITE;
-                    if (y == menuCursor) {
-                        bg = Color.WHITE;
-                        fg = Color.BLACK;
-                    }
-
-                    MenuItem menuItem = menu.getMenuItems().get(y);
-                    String menuLabel = menuItem.getLabel();
-                    char c;
-                    if (x < menuLabel.length()) {
-                        c = menuLabel.charAt(x);
-                    } else {
-                        c = ' ';
-                    }
-                    drawChar(g, c, mx + x, my + y, bg, fg);
-                }
-            }
-            // ------------------------------------------------
-            // draw borders around menu
-            // ------------------------------------------------
-            Color bg = Color.BLACK;
-            Color fg = Color.DARK_GRAY;
-            // ─│┌┐└┘
-
-            for (int y = 0; y < menuHeight; y++) {
-                int x = mx - 1;
-                drawChar(g, '│', x, my + y, bg, fg);
-                x = mx + menuWidth;
-                drawChar(g, '│', x, my + y, bg, fg);
-            }
-
-            for (int x = 0; x < menuWidth; x++) {
-                int y = my - 1;
-                drawChar(g, '─', mx + x, y, bg, fg);
-                y = my + menuHeight;
-                drawChar(g, '─', mx + x, y, bg, fg);
-            }
-            drawChar(g, '┌', -1 + mx, -1 + my, bg, fg);
-            drawChar(g, '┐', mx + menuWidth, -1 + my, bg, fg);
-            drawChar(g, '└', -1 + mx, my + menuHeight, bg, fg);
-            drawChar(g, '┘', mx + menuWidth, my + menuHeight, bg, fg);
-
-        }
     }
 
     public void start() {
@@ -365,6 +203,13 @@ public class Game {
 
         graphics2D.setColor(fg);
         graphics2D.drawString(c + "", tx , ty);
+    }
+
+    public void drawString(Graphics2D g, String str, int gx, int gy, Color bg, Color fg) {
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            drawChar(g, c, gx + i, gy, bg, fg);
+        }
     }
 
     public void drawCharGrid(Graphics2D graphics2D) {
@@ -472,15 +317,19 @@ public class Game {
             public void keyPressed(KeyEvent e) {
                 switch (e.getKeyCode()) {
                     case KeyEvent.VK_UP:
+                    case KeyEvent.VK_K:
                         playerAction = PlayerAction.UP;
                         break;
                     case KeyEvent.VK_DOWN:
+                    case KeyEvent.VK_J:
                         playerAction = PlayerAction.DOWN;
                         break;
                     case KeyEvent.VK_LEFT:
+                    case KeyEvent.VK_H:
                         playerAction = PlayerAction.LEFT;
                         break;
                     case KeyEvent.VK_RIGHT:
+                    case KeyEvent.VK_L:
                         playerAction = PlayerAction.RIGHT;
                         break;
                     case KeyEvent.VK_ENTER:
@@ -596,30 +445,12 @@ public class Game {
         }
     }
 
-    private boolean moveMenu(PlayerAction playerAction) {
-        boolean updated = false;
+    public int getGridWidth() {
+        return gridWidth;
+    }
 
-        switch (playerAction) {
-            case UP:
-            case LEFT:
-                menuCursor -=1;
-                if (menuCursor < 0) {
-                    menuCursor = oldMenuList.size() - 1;
-                }
-                updated = true;
-                break;
-            case DOWN:
-            case RIGHT:
-                menuCursor +=1;
-                if (menuCursor > oldMenuList.size() - 1) {
-                    menuCursor = 0;
-                }
-                updated = true;
-                break;
-        }
-
-
-        return updated;
+    public int getGridHeight() {
+        return gridHeight;
     }
 
 }

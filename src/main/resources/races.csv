@@ -1,0 +1,5 @@
+race name,strength,stamina,agility,intelligence,wisdom,charisma,,
+Human,,,,,,,,
+Elf,,,1,,2,,,
+Dwarf,1,2,,,,-2,,
+Halfling,-1,,2,1,,1,,

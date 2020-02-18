@@ -1,7 +1,6 @@
 package com.aaroncarsonart.quickgame2.menu;
 
 import com.aaroncarsonart.quickgame2.PlayerAction;
-import imbroglio.Position2D;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,10 +10,6 @@ public class Menu {
     private MenuView menuView;
     private MenuLayout menuLayout;
     private int index;
-//    private int maxWidth;
-//    private int maxHeight;
-//    private int startDisplayY;
-//    private int startDisplayX;
 
     private Callback cancelCallback;
 
@@ -76,10 +71,10 @@ public class Menu {
                 MenuItem selectedMenuItem = menuItems.get(index);
                 selectedMenuItem.callback.execute();
                 break;
-            default:
             case CANCEL:
                 cancelCallback.execute();
                 break;
+            default:
         }
     }
 
