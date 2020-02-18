@@ -1,6 +1,5 @@
 package com.aaroncarsonart.quickgame2.menu;
 
-import com.aaroncarsonart.quickgame2.CharGrid;
 import com.aaroncarsonart.quickgame2.PlayerAction;
 import imbroglio.Position2D;
 
@@ -9,26 +8,22 @@ import java.util.List;
 
 public class Menu {
     private List<MenuItem> menuItems;
+    private MenuView menuView;
     private MenuLayout menuLayout;
     private int index;
 //    private int maxWidth;
 //    private int maxHeight;
 //    private int startDisplayY;
 //    private int startDisplayX;
-    private Position2D origin;
 
     private Callback cancelCallback;
 
-    public Menu(int y, int x, MenuLayout menuLayout, Callback cancelCallback) {
-        this(new Position2D(x, y), menuLayout, cancelCallback);
-    }
-
-    public Menu(Position2D origin, MenuLayout menuLayout, Callback cancelCallback) {
+    public Menu(MenuView menuView, MenuLayout menuLayout, Callback cancelCallback) {
+        this.menuView = menuView;
         this.menuItems = new ArrayList<>();
         this.index = 0;
         this.menuLayout = menuLayout;
         this.cancelCallback = cancelCallback;
-        this.origin = origin;
     }
 
     public void addMenuItem(MenuItem menuItem) {
@@ -36,15 +31,31 @@ public class Menu {
     }
 
     public void next() {
-        if (index < menuItems.size() - 1) {
-            index ++;
+        index +=1;
+        if (index > menuItems.size() - 1) {
+            index = 0;
         }
+//        if (index < menuItems.size() - 1) {
+//            index ++;
+//        }
     }
 
     public void previous() {
-        if (index > 0) {
-            index --;
+        index -=1;
+        if (index < 0) {
+            index = menuItems.size() - 1;
         }
+//        if (index > 0) {
+//            index --;
+//        }
+    }
+
+    public MenuView getMenuView() {
+        return menuView;
+    }
+
+    public void setMenuView(MenuView menuView) {
+        this.menuView = menuView;
     }
 
     public void updateMenu(PlayerAction playerAction) {
@@ -94,14 +105,6 @@ public class Menu {
 
     public void setIndex(int index) {
         this.index = index;
-    }
-
-    public Position2D getOrigin() {
-        return origin;
-    }
-
-    public void setOrigin(Position2D origin) {
-        this.origin = origin;
     }
 
     public Callback getCancelCallback() {

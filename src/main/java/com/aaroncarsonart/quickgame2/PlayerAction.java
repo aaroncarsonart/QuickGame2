@@ -1,5 +1,7 @@
 package com.aaroncarsonart.quickgame2;
 
+import org.omg.CORBA.UNKNOWN;
+
 public enum PlayerAction {
-    UP, DOWN, LEFT, RIGHT, OK, CANCEL, TAB, END_TURN, UNKNOWN
+    UP, DOWN, LEFT, RIGHT, OK, CANCEL, QUIT, MOVE_MENU, UNKNOWN
 }

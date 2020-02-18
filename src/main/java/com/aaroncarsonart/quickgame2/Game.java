@@ -1,123 +1,474 @@
 package com.aaroncarsonart.quickgame2;
 
+import com.aaroncarsonart.quickgame2.menu.Callback;
+import com.aaroncarsonart.quickgame2.menu.Menu;
+import com.aaroncarsonart.quickgame2.menu.MenuItem;
+import com.aaroncarsonart.quickgame2.menu.MenuLayout;
+import com.aaroncarsonart.quickgame2.menu.MenuView;
+import imbroglio.Direction;
 import imbroglio.Maze;
 import imbroglio.Position2D;
 
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Stack;
 
 public class Game {
 
-    public static final int WINDOW_WIDTH = 60;
-    public static final int WINDOW_HEIGHT = 30;
-
-    public static final Random RNG = Constants.RNG;
-
     public static final Color BROWN = new Color(165, 82, 0);
     public static final Color DARK_BROWN = new Color(50, 15, 0);
-    public static final Color DARK_CYAN = new Color(0, 30, 30);
 
-    CharGrid charGrid;
-    KeyListener keyListener;
-    PlayerAction playerAction;
+    private int fontSize = 16;
 
-    boolean[][] highlight = new boolean[WINDOW_HEIGHT][WINDOW_WIDTH];
-    boolean ignoreInvertOnMouseExit = false;
-    boolean endGameTurn = false;
-    boolean toggleHUD = true;
-    private int turnCounter = 1;
+    private JFrame frame;
+    private JPanel canvas = new Canvas();
+    private Font font = new Font("Courier", Font.PLAIN, fontSize);
+    private FontMetrics fontMetrics = canvas.getFontMetrics(font);
 
-    int treasure = 0;
+    private int fontWidth = fontMetrics.stringWidth("@");
+    private int fontHeight = fontMetrics.getHeight();
+    private int fontAscent = fontMetrics.getAscent();
 
-    public Game() {
-        charGrid = new CharGrid(WINDOW_HEIGHT, WINDOW_WIDTH);
-        highlight = new boolean[WINDOW_HEIGHT][WINDOW_WIDTH];
+    private int tileHeight = fontHeight;
+    private int tileWidth = tileHeight;
 
-        keyListener = createKeyListener();
-        charGrid.getJFrame().addKeyListener(keyListener);
+    private int gridWidth = 60;
+    private int gridHeight = 40;
 
-        for (int y = 0; y < WINDOW_HEIGHT; ++y) {
-            for (int x = 0; x < WINDOW_WIDTH; ++x) {
-                createMouseListener(charGrid, y, x);
+    private int width = gridWidth * tileWidth;
+    private int height = gridHeight * tileHeight;
+
+    private char[][] charGrid;
+    private Position2D player;
+    private PlayerAction playerAction;
+    private GameMode gameMode = GameMode.MAP;
+
+    private List<String> oldMenuList;
+    private int menuCursor;
+
+    private Menu moveMenu;
+    private Menu mainMenu;
+    private Stack<Menu> menuList;
+
+    private static final Random RANDOM = Constants.RNG;
+
+    /**
+     * A custom Component for drawing the game graphics to the screen.
+     */
+    public class Canvas extends JPanel {
+        @Override
+        public void paint(Graphics g) {
+            Graphics2D graphics2D = (Graphics2D) g;
+            drawCharGrid(graphics2D);
+            if (gameMode == GameMode.MENU) {
+                //drawMenus(graphics2D);
+                Menu menu = menuList.peek();
+                menu.getMenuView().render(graphics2D, menu);
             }
         }
-
-        setupGameData();
-        redrawScreen();
-    }
-
-    public MouseListener createMouseListener(CharGrid charGrid, int y, int x) {
-        CharPanel panel = charGrid.getTilePanel(y, x);
-        MouseListener listener = new MouseListener() {
-            public void mouseClicked(MouseEvent e) {
-                Position2D camera = squadMembers.get(selectedMember).position;
-                Position2D center = new Position2D(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
-
-                for (SquadMember member : squadMembers) {
-                    int tx = member.position.x() + center.x() - camera.x();
-                    int ty = member.position.y() + center.y() - camera.y();
-
-//                    System.out.println("Member " + member.numeral + " at " + new Position2D(tx, ty));
-
-                    if (x == tx && y == ty) {
-                        selectedMember = Character.getNumericValue(member.numeral) - 1;
-                        ignoreInvertOnMouseExit = true;
-                        redrawScreen();
-                    }
-                }
-            }
-            public void mousePressed(MouseEvent e) {
-            }
-            public void mouseReleased(MouseEvent e) {
-            }
-            public void mouseEntered(MouseEvent e) {
-                highlight[y][x] = true;
-                redrawScreen();
-
-//                Color bg = panel.getBgColor();
-//                Color fg = panel.getFgColor();
-//                panel.setForeground(bg);
-//                panel.setBackground(fg);
-                System.out.println("Entered " + new Position2D(x, y));
-            }
-            public void mouseExited(MouseEvent e) {
-                highlight[y][x] = false;
-                redrawScreen();
-
-//                Color bg = panel.getBgColor();
-//                 Color fg = panel.getFgColor();
-//                 panel.setForeground(bg);
-//                 panel.setBackground(fg);
-            }
-        };
-        panel.getJPanel().addMouseListener(listener);
-        return listener;
-    }
-
-
-    public void start() {
-        charGrid.show();
     }
 
     /**
-     * @return The KeyListener that handles raw KeyEvents.
+     * Initialize the key game components.
      */
+    Game() {
+        // init swing
+        frame = new JFrame("QuickGame 2");
+        canvas.setPreferredSize(new Dimension(width, height));
+        frame.add(canvas, BorderLayout.CENTER);
+        frame.pack();
+        frame.addKeyListener(createKeyListener());
+
+        // init oldMenuList
+        oldMenuList = new ArrayList<>();
+
+        // ------------------------------------------------
+        // init charGrid
+        // ------------------------------------------------
+//        Maze maze = Maze.generateRandomWalledMaze(gridWidth, gridHeight);
+        Maze maze = Maze.generateCellularAutomataRoom(gridWidth, gridHeight - 3);
+        for (int i = 0; i < 3; i++) {
+            maze.cellularAutomataIteration();
+            maze.connectDisconnectedComponents();
+        }
+        charGrid = new char[gridHeight][gridWidth];
+        for (int x = 0; x < gridWidth; x++) {
+            for (int y = 0; y < gridHeight; y++) {
+                byte b = maze.getCell(x, y);
+                char c;
+                if (b == Maze.WALL) {
+                    c = '#';
+                } else if (b == Maze.PATH) {
+                    c = '.';
+                } else {
+                    c = ' ';
+                }
+                charGrid[y][x] = c;
+            }
+        }
+
+        // ------------------------------------------------
+        // Populate charGrid
+        // ------------------------------------------------
+        List<Position2D> openPaths = new ArrayList<>();
+        for (int y = 0; y < gridHeight; y++) {
+            for (int x = 0; x < gridWidth; x++) {
+                char c = charGrid[y][x];
+                if (c == '.') {
+                    openPaths.add(new Position2D(x, y));
+                }
+            }
+        }
+
+        player = openPaths.remove(0);
+
+
+        // ------------------------------------------------
+        // Setup mainMenu
+        // ------------------------------------------------
+        Callback menuCancelCallback = () -> {
+            menuList.pop();
+            if (menuList.empty()) {
+                gameMode = GameMode.MAP;
+            }
+        };
+
+        mainMenu = new Menu(new CenterMenuView(), MenuLayout.VERTICAL, menuCancelCallback);
+        mainMenu.addMenuItem(new MenuItem("Status", () -> {}));
+        mainMenu.addMenuItem(new MenuItem("Inventory", () -> {}));
+        mainMenu.addMenuItem(new MenuItem("Equipment", () -> {}));
+        mainMenu.addMenuItem(new MenuItem("Save", () -> {}));
+        mainMenu.addMenuItem(new MenuItem("Exit", () -> System.exit(0)));
+
+
+        // ------------------------------------------------
+        // setup moveMenu test
+        // ------------------------------------------------
+
+        menuList = new Stack<>();
+        Position2D moveMenuOrigin = new Position2D(0,0);
+        moveMenu = new Menu(new BasicVerticalMenuView(moveMenuOrigin), MenuLayout.VERTICAL, menuCancelCallback);
+        moveMenu.addMenuItem(new MenuItem("Move UP", () -> moveMap(PlayerAction.UP)));
+        moveMenu.addMenuItem(new MenuItem("Move DOWN", () -> moveMap(PlayerAction.DOWN)));
+        moveMenu.addMenuItem(new MenuItem("Move RIGHT", () -> moveMap(PlayerAction.RIGHT)));
+        moveMenu.addMenuItem(new MenuItem("Move LEFT", () -> moveMap(PlayerAction.LEFT)));
+    }
+
+    /**
+     * Draws a borderless, vertical list menu in the upper left hand corner.
+     */
+    public class BasicVerticalMenuView implements MenuView {
+        Position2D origin;
+
+        BasicVerticalMenuView(Position2D origin) {
+            this.origin = origin;
+        }
+
+        public void render(Graphics2D g, Menu menu) {
+            List<MenuItem> items = menu.getMenuItems();
+            int height = items.size();
+            int width = 0;
+            for (int i = 0; i < items.size(); i++) {
+                width = Math.max(width, items.get(i).getLabel().length());
+            }
+//            for (int x = 0; x < width; x++) {
+//                for (int y = 0; y < height; y++) {
+//                    drawChar(g, " ", x, y, Color.BLACK, Color.BLACK);
+//                }
+//            }
+            int selectedIndex = menu.getIndex();
+            for (int i = 0; i < items.size(); i++) {
+                MenuItem item = items.get(i);
+                String label = item.getLabel();
+                for (int j = 0; j < width; j++) {
+
+                    // get character to print
+                    char c;
+                    if (j < label.length()) {
+                        c = label.charAt(j);
+                    } else {
+                        c = ' ';
+                    }
+
+                    // get colors
+                    Color bg, fg;
+                    if (i == selectedIndex) {
+                        bg = Color.WHITE;
+                        fg = Color.BLACK;
+                    } else {
+                        bg = Color.BLACK;
+                        fg = Color.WHITE;
+                    }
+
+                    int x = origin.x() + j;
+                    int y = origin.y() + i;
+
+                    // draw character
+                    drawChar(g, c, x, y, bg, fg);
+                }
+            }
+        }
+    }
+
+    /**
+     * Draws a borderless, vertical list menu in the upper left hand corner.
+     */
+    public class BasicHorizontalMenuView implements MenuView {
+        Position2D origin;
+
+        BasicHorizontalMenuView(Position2D origin) {
+            this.origin = origin;
+        }
+
+        public void render(Graphics2D g, Menu menu) {
+            List<MenuItem> items = menu.getMenuItems();
+            int height = items.size();
+            int width = 0;
+            for (int i = 0; i < items.size(); i++) {
+                width = Math.max(width, items.get(i).getLabel().length());
+            }
+//            for (int x = 0; x < width; x++) {
+//                for (int y = 0; y < height; y++) {
+//                    drawChar(g, " ", x, y, Color.BLACK, Color.BLACK);
+//                }
+//            }
+            int selectedIndex = menu.getIndex();
+            for (int i = 0; i < items.size(); i++) {
+                MenuItem item = items.get(i);
+                String label = item.getLabel();
+                for (int j = 0; j < width; j++) {
+
+                    // get character to print
+                    char c;
+                    if (j < label.length()) {
+                        c = label.charAt(j);
+                    } else {
+                        c = ' ';
+                    }
+
+                    // get colors
+                    Color bg, fg;
+                    if (i == selectedIndex) {
+                        bg = Color.WHITE;
+                        fg = Color.BLACK;
+                    } else {
+                        bg = Color.BLACK;
+                        fg = Color.WHITE;
+                    }
+
+                    int x = origin.x() + j;
+                    int y = origin.y() + i;
+
+                    // draw character
+                    drawChar(g, c, x, y, bg, fg);
+                }
+            }
+        }
+    }
+
+    /**
+     * Draws a centered Menu with a border.
+     */
+    public class CenterMenuView implements MenuView {
+        public void render(Graphics2D g, Menu menu) {
+            int menuWidth = 0;
+            for (MenuItem menuItem : menu.getMenuItems()) {
+                menuWidth = Math.max(menuWidth, menuItem.getLabel().length());
+            }
+            int menuHeight = menu.getMenuItems().size();
+
+            int mx = (gridWidth - menuWidth) / 2;
+            int my = (gridHeight - menuHeight) / 2;
+
+            int menuCursor = menu.getIndex();
+
+            // ------------------------------------------------
+            // draw oldMenuList contents
+            // ------------------------------------------------
+            for (int y = 0; y < menuHeight; y++) {
+                for (int x = 0; x < menuWidth; x++) {
+                    Color bg = Color.BLACK;
+                    Color fg = Color.WHITE;
+                    if (y == menuCursor) {
+                        bg = Color.WHITE;
+                        fg = Color.BLACK;
+                    }
+
+                    MenuItem menuItem = menu.getMenuItems().get(y);
+                    String menuLabel = menuItem.getLabel();
+                    char c;
+                    if (x < menuLabel.length()) {
+                        c = menuLabel.charAt(x);
+                    } else {
+                        c = ' ';
+                    }
+                    drawChar(g, c, mx + x, my + y, bg, fg);
+                }
+            }
+            // ------------------------------------------------
+            // draw borders around menu
+            // ------------------------------------------------
+            Color bg = Color.BLACK;
+            Color fg = Color.DARK_GRAY;
+            // ─│┌┐└┘
+
+            for (int y = 0; y < menuHeight; y++) {
+                int x = mx - 1;
+                drawChar(g, '│', x, my + y, bg, fg);
+                x = mx + menuWidth;
+                drawChar(g, '│', x, my + y, bg, fg);
+            }
+
+            for (int x = 0; x < menuWidth; x++) {
+                int y = my - 1;
+                drawChar(g, '─', mx + x, y, bg, fg);
+                y = my + menuHeight;
+                drawChar(g, '─', mx + x, y, bg, fg);
+            }
+            drawChar(g, '┌', -1 + mx, -1 + my, bg, fg);
+            drawChar(g, '┐', mx + menuWidth, -1 + my, bg, fg);
+            drawChar(g, '└', -1 + mx, my + menuHeight, bg, fg);
+            drawChar(g, '┘', mx + menuWidth, my + menuHeight, bg, fg);
+
+        }
+    }
+
+    public void start() {
+        System.out.println("Hello, world!");
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    }
+
+    public void drawChar(Graphics2D graphics2D, char c, int gx, int gy, Color bg, Color fg) {
+        int x = gx * tileWidth;
+        int y = gy * tileHeight;
+
+        graphics2D.setColor(bg);
+        graphics2D.fillRect(x, y, tileWidth, tileHeight);
+
+        int ty = y + fontAscent;
+        int tx = x + (tileWidth - fontWidth) / 2;
+
+        graphics2D.setColor(fg);
+        graphics2D.drawString(c + "", tx , ty);
+    }
+
+    public void drawCharGrid(Graphics2D graphics2D) {
+        graphics2D.setColor(Color.BLACK);
+        graphics2D.fillRect(0, 0, width, height);
+
+        graphics2D.setFont(font);
+        graphics2D.setRenderingHints(new RenderingHints(
+                RenderingHints.KEY_TEXT_ANTIALIASING,
+                RenderingHints.VALUE_TEXT_ANTIALIAS_ON));
+
+        // draw background
+        for (int gx = 0; gx < gridWidth; gx++) {
+            for (int gy = 0; gy < gridHeight; gy++) {
+
+                char c = charGrid[gy][gx];
+                Color bg, fg;
+                if (c == '#') {
+                    bg = DARK_BROWN;
+                    fg = BROWN;
+                } else if (c == '.') {
+                    bg = Color.BLACK;
+                    fg = Color.DARK_GRAY;
+                } else {
+                    bg = Color.BLACK;
+                    fg = Color.WHITE;
+                }
+                drawChar(graphics2D, c, gx, gy, bg, fg);
+            }
+        }
+
+        // draw sprites
+        int px = player.x();
+        int py = player.y();
+        Color pbg = Color.BLACK;
+        Color pfg = Color.WHITE;
+
+        drawChar(graphics2D, '@', px, py, pbg, pfg);
+    }
+
+    private void drawMenus(Graphics2D graphics2D) {
+        int menuWidth = 0;
+        for (String menuItem : oldMenuList) {
+            menuWidth = Math.max(menuWidth, menuItem.length());
+        }
+        int menuHeight = oldMenuList.size();
+
+        int mx = (gridWidth - menuWidth) / 2;
+        int my = (gridHeight - menuHeight) / 2;
+
+        // ------------------------------------------------
+        // draw oldMenuList contents
+        // ------------------------------------------------
+        for (int y = 0; y < menuHeight; y++) {
+            for (int x = 0; x < menuWidth; x++) {
+                Color bg = Color.BLACK;
+                Color fg = Color.WHITE;
+                if (y == menuCursor) {
+                    bg = Color.WHITE;
+                    fg = Color.BLACK;
+                }
+
+                String menuItem = oldMenuList.get(y);
+                char c;
+                if (x < menuItem.length()) {
+                    c = menuItem.charAt(x);
+                } else {
+                    c = ' ';
+                }
+                drawChar(graphics2D, c, mx + x, my + y, bg, fg);
+            }
+        }
+        // ------------------------------------------------
+        // draw oldMenuList borders
+        // ------------------------------------------------
+        Color bg = Color.BLACK;
+        Color fg = Color.DARK_GRAY;
+        // ─│┌┐└┘
+
+        for (int y = 0; y < menuHeight; y++) {
+            int x = mx - 1;
+            drawChar(graphics2D, '│', x, my + y, bg, fg);
+            x = mx + menuWidth;
+            drawChar(graphics2D, '│', x, my + y, bg, fg);
+        }
+
+        for (int x = 0; x < menuWidth; x++) {
+            int y = my - 1;
+            drawChar(graphics2D, '─', mx + x, y, bg, fg);
+            y = my + menuHeight;
+            drawChar(graphics2D, '─', mx + x, y, bg, fg);
+        }
+        drawChar(graphics2D, '┌', -1 + mx, -1 + my, bg, fg);
+        drawChar(graphics2D, '┐', mx + menuWidth, -1 + my, bg, fg);
+        drawChar(graphics2D, '└', -1 + mx, my + menuHeight, bg, fg);
+        drawChar(graphics2D, '┘', mx + menuWidth, my + menuHeight, bg, fg);
+
+
+    }
+
     public KeyListener createKeyListener() {
-        return new KeyListener() {
-            public void keyTyped(KeyEvent e) {
-            }
-
-            public void keyReleased(KeyEvent e) {
-            }
-
+        KeyListener keyListener = new KeyListener() {
+            public void keyTyped(KeyEvent e) {}
+            public void keyReleased(KeyEvent e) {}
             public void keyPressed(KeyEvent e) {
                 switch (e.getKeyCode()) {
                     case KeyEvent.VK_UP:
@@ -140,12 +491,11 @@ public class Game {
                     case KeyEvent.VK_X:
                         playerAction = PlayerAction.CANCEL;
                         break;
-                    case KeyEvent.VK_TAB:
-                    case KeyEvent.VK_C:
-                        playerAction = PlayerAction.TAB;
+                    case KeyEvent.VK_Q:
+                        playerAction = PlayerAction.QUIT;
                         break;
-                    case KeyEvent.VK_E:
-                        playerAction = PlayerAction.END_TURN;
+                    case KeyEvent.VK_M:
+                        playerAction = PlayerAction.MOVE_MENU;
                         break;
                     default:
                         playerAction = PlayerAction.UNKNOWN;
@@ -154,462 +504,122 @@ public class Game {
                 gameLoop();
             }
         };
+        return keyListener;
     }
 
-    public void gameLoop() {
-        respondToUserInput();
-        redrawScreen();
-    }
-
-    public void redrawScreen() {
-        if (endGameTurn) {
-            drawNextTurnScreen();
-            endGameTurn = false;
-        } else {
-            drawMap();
-        }
-        charGrid.getJFrame().repaint();
-    }
-
-    public void respondToUserInput() {
-        if (playerAction == PlayerAction.CANCEL) {
-            toggleHUD = !toggleHUD;
-        } else if (playerAction == PlayerAction.TAB) {
-            selectedMember++;
-            if (selectedMember >= squadMembers.size()) {
-                selectedMember = 0;
+    /**
+     * Execute one iteration of the game loop.  To be called
+     * immediately after processing user input.
+     */
+    private void gameLoop() {
+        boolean updated = false;
+        switch (gameMode) {
+            // --------------------------------------------
+            case MAP: {
+            // --------------------------------------------
+                switch(playerAction) {
+                    case UP:
+                    case DOWN:
+                    case LEFT:
+                    case RIGHT:
+                        updated = moveMap(playerAction);
+                        break;
+                    case CANCEL:
+                        gameMode = GameMode.MENU;
+                        menuList.push(mainMenu);
+                        updated = true;
+                        break;
+                    case MOVE_MENU:
+                        gameMode = GameMode.MENU;
+                        menuList.push(moveMenu);
+                        updated = true;
+                        break;
+                    case QUIT:
+                        System.exit(0);
+                }
             }
-        } else if (playerAction == PlayerAction.END_TURN) {
-            endGameTurn = true;
-            turnCounter += 1;
-            for (SquadMember member : squadMembers) {
-                member.energy = member.speed;
+            break;
+            // --------------------------------------------
+            case MENU: {
+            // --------------------------------------------
+                menuList.peek().updateMenu(playerAction);
+                updated = true;
+//                switch(playerAction) {
+//                    case UP:
+//                    case DOWN:
+//                    case LEFT:
+//                    case RIGHT:
+//                        updated = moveMenu(playerAction);
+//                        break;
+//                    case CANCEL:
+//                        gameMode = GameMode.MAP;
+//                        updated = true;
+//                        break;
+//                    case QUIT:
+//                        System.exit(0);
+//                }
             }
-        } else {
-            movePlayer();
+            break;
         }
-
+        if (updated) {
+            canvas.repaint();
+        }
     }
 
-    public void movePlayer() {
-        SquadMember activeMember = squadMembers.get(selectedMember);
-        Position2D nextPos;
-        Position2D currentPos = activeMember.position;
+    private boolean moveMap(PlayerAction playerAction) {
+        boolean updated = false;
+        Position2D next = player.moveTowards(getDirection(playerAction));
+        boolean passable = false;
+        if (withinBounds(next.y(), next.x())) {
+            char c = charGrid[next.y()][next.x()];
+            passable = c == '.';
+        }
+        if (passable) {
+            player = next;
+            updated = true;
+        }
+        System.out.println("PlayerPos: " + player);
+        return updated;
+    }
+
+    private boolean withinBounds(int y, int x) {
+        return 0 <= x && x < gridWidth && 0 <= y && y < gridHeight;
+    }
+
+    private Direction getDirection(PlayerAction action) {
+        switch (action) {
+            case UP: return Direction.UP;
+            case DOWN: return Direction.DOWN;
+            case LEFT: return Direction.LEFT;
+            case RIGHT: return Direction.RIGHT;
+            default: return Direction.NONE;
+        }
+    }
+
+    private boolean moveMenu(PlayerAction playerAction) {
+        boolean updated = false;
 
         switch (playerAction) {
             case UP:
-                nextPos = currentPos.above();
+            case LEFT:
+                menuCursor -=1;
+                if (menuCursor < 0) {
+                    menuCursor = oldMenuList.size() - 1;
+                }
+                updated = true;
                 break;
             case DOWN:
-                nextPos = currentPos.below();
-                break;
-            case LEFT:
-                nextPos = currentPos.left();
-                break;
             case RIGHT:
-                nextPos = currentPos.right();
+                menuCursor +=1;
+                if (menuCursor > oldMenuList.size() - 1) {
+                    menuCursor = 0;
+                }
+                updated = true;
                 break;
-            default:
-                nextPos = currentPos;
-                break;
-        }
-
-        // TODO make every action cost movement points
-        // (empty 1, grass 2, water 3, and treasure 4)
-
-        if (withinBounds(nextPos, height, width)
-                && !occupied(nextPos)) {
-
-            // calculate movement cost
-            int movementCost = 0;
-            // check for treasure
-            if (gameMap[nextPos.y()][nextPos.x()] == '~') {
-                movementCost = 3;
-            } else if (gameMap[nextPos.y()][nextPos.x()] == '"') {
-                movementCost = 0;
-            }
-            else if (gameMap[nextPos.y()][nextPos.x()] == '$') {
-                movementCost = 4;
-            } else {
-                movementCost = 1;
-            }
-
-            if (activeMember.energy - movementCost >= 0) {
-                activeMember.energy -= movementCost;
-
-                if (gameMap[nextPos.y()][nextPos.x()] == '$') {
-                    gameMap[nextPos.y()][nextPos.x()] = '.';
-                    treasure += 1;
-                }
-
-                entityMap[currentPos.y()][currentPos.x()] = '\u0000';
-                entityMap[nextPos.y()][nextPos.x()] = activeMember.numeral;
-                activeMember.position = nextPos;
-            }
-        }
-    }
-
-    private int width;
-    private int height;
-    private char[][] gameMap;
-    private List<SquadMember> squadMembers;
-    private int selectedMember;
-
-    private char[][] entityMap;
-
-    public void setupGameData() {
-        width = RNG.nextInt(40) + 40;
-        height = RNG.nextInt(20 + 20);
-        gameMap = new char[height][width];
-        entityMap = new char[height][width];
-
-        List<Position2D> openPaths = new ArrayList<>();
-
-        // -------------------------------------------------------------
-        // Create terrain
-        // -------------------------------------------------------------
-
-        Maze maze = Maze.generateCellularAutomataRoom(width, height);
-        for (int i = 0; i < 6; i++) {
-            maze.cellularAutomataIteration();
-            maze.connectDisconnectedComponents();
-        }
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                byte cell = maze.getCell(x, y);
-                char sprite = cell == Maze.WALL ? '#' : '.';
-                gameMap[y][x] = sprite;
-//                gameMap[y][x] = '.';
-                if (!occupied(y, x)) {
-                    openPaths.add(new Position2D(x, y));
-                }
-            }
-        }
-
-        // ------------------------------------------------------
-        // create grass
-        // ------------------------------------------------------
-        int foodCount = RNG.nextInt(20) + 20;
-        for (int i = 0; i < foodCount; i++) {
-            if (openPaths.isEmpty()) {
-                break;
-            }
-            Position2D foodPos = openPaths.remove(RNG.nextInt(openPaths.size()));
-            gameMap[foodPos.y()][foodPos.x()] = '"';
-        }
-
-        char tile = '"';
-        int count = 5;
-        int maxNeighbors = Math.max(0, 20) + RNG.nextInt(Math.min(1, 20));
-        if (maxNeighbors > 0) {
-            addBlobsOfTiles(tile, openPaths, count, maxNeighbors);
-        }
-
-        // ------------------------------------------------------
-        // create water
-        // ------------------------------------------------------
-        tile = '~';
-        count = 5;
-        maxNeighbors = Math.max(1, 10) + RNG.nextInt(Math.max(1, 10));
-        if (maxNeighbors > 0) {
-            addBlobsOfTiles(tile, openPaths, count, maxNeighbors);
-        }
-        tile = '~';
-        count = Math.max( 1, 10);
-        maxNeighbors = 3 + RNG.nextInt(3);
-        addBlobsOfTiles(tile, openPaths, count, maxNeighbors);
-
-        // ------------------------------------------------------
-        // add treasure
-        // ------------------------------------------------------
-        treasures = new ArrayList<>();
-        int treasureCount = RNG.nextInt(5) + 5;
-        for (int i = 0; i < treasureCount; i++) {
-            if (openPaths.isEmpty()) {
-                break;
-            }
-            Position2D treasurePos = openPaths.remove(RNG.nextInt(openPaths.size()));
-            gameMap[treasurePos.y()][treasurePos.x()] = '$';
-            treasures.add(treasurePos);
-        }
-
-        tile = '$';
-        count = 5;
-        maxNeighbors = 5 + RNG.nextInt(5);
-        boolean useTreasure = true;
-        addBlobsOfTiles(tile, openPaths, count, maxNeighbors, useTreasure);
-
-
-        // -------------------------------------------------------------
-        // Create SquadMembers
-        // -------------------------------------------------------------
-
-        List<Position2D> bottomPaths = new ArrayList<>();
-        for (int y = height - 1; y >= height * 3 / 4; y--) {
-            for (int x = 0; x < width / 4; x++) {
-                if (!occupied(y, x)) {
-                    bottomPaths.add(new Position2D(x, y));
-                }
-            }
-        }
-        int squadCount = 4;
-        squadMembers = new ArrayList<>();
-        for (int i = 1; i <= squadCount; i++) {
-            Position2D openPath = bottomPaths.remove(Constants.RNG.nextInt(bottomPaths.size()));
-            SquadMember squadMember = new SquadMember();
-            squadMember.numeral = Character.forDigit(i, 10);
-            squadMember.position = openPath;
-            squadMember.speed = 20;
-            squadMember.energy = squadMember.speed;
-
-            squadMembers.add(squadMember);
-            entityMap[openPath.y()][openPath.x()] = squadMember.numeral;
         }
 
 
-    }
-
-    public boolean occupied(int y, int x) {
-        return occupied(new Position2D(x, y), "#");
-    }
-
-
-    public boolean occupied(Position2D p) {
-        return occupied(p, "#");
-    }
-
-    public boolean occupied(Position2D p, String chars) {
-        char c = gameMap[p.y()][p.x()];
-        char entity = entityMap[p.y()][p.x()];
-        return chars.contains(String.valueOf(c)) || entity != '\u0000';
-    }
-
-    public boolean occupied(Position2D p, char sprite) {
-        return gameMap[p.y()][p.x()] == sprite || entityMap[p.y()][p.x()] != '\u0000';
-    }
-
-
-    public boolean withinBounds(Position2D p, int height, int width) {
-        return withinBounds(p.y(), p.x(), height, width);
-    }
-
-    public boolean withinBounds(int y, int x, int height, int width) {
-        return x >= 0 && x < width && y >= 0 && y < height;
-    }
-
-    public void drawNextTurnScreen() {
-//        // ------------------------------------------------------------------
-//        // Clear ScreenBuffer
-//        // ------------------------------------------------------------------
-//
-//        for (int y = 0; y < WINDOW_HEIGHT; y++) {
-//            for (int x = 0; x < WINDOW_WIDTH; x++) {
-//                charGrid.setChar(' ', y, x);
-//                if (highlight[y][x]) {
-//                    charGrid.setColors(Color.WHITE, Color.BLACK, y, x);
-//                } else {
-//                    charGrid.setColors(Color.BLACK, Color.WHITE, y, x);
-//                }
-//            }
-//        }
-//
-//        charGrid.drawBoxBorders(0, 0, WINDOW_HEIGHT - 1, WINDOW_WIDTH - 1);
-//        charGrid.drawBoxCorners(0, 0, WINDOW_HEIGHT - 1, WINDOW_WIDTH - 1);
-
-        int cw = 12;
-        int ch = 2;
-        int cx = WINDOW_WIDTH / 2 - cw / 2;
-        int cy = WINDOW_HEIGHT / 2 - ch / 2;
-
-        charGrid.fillRect(' ', Color.BLACK, Color.BLACK, cy, cx, ch, cw);
-        charGrid.drawBoxBorders(cy, cx, ch, cw);
-        charGrid.drawBoxCorners(cy, cx, ch, cw);
-
-        charGrid.drawText("Next Turn", cy + 1, cx + 2);
-
-    }
-
-    public void drawMap() {
-
-        // ------------------------------------------------------------------
-        // Clear ScreenBuffer
-        // ------------------------------------------------------------------
-
-        for (int y = 0; y < WINDOW_HEIGHT; y++) {
-            for (int x = 0; x < WINDOW_WIDTH; x++) {
-//                charGrid.setChar(' ', y, x);
-//                charGrid.setColors(Color.BLACK, Color.WHITE, y, x);
-                charGrid.setChar('#', y, x);
-                if (highlight[y][x]) {
-                    charGrid.setColors(BROWN, DARK_BROWN, y, x);
-                } else {
-                    charGrid.setColors(DARK_BROWN, BROWN, y, x);
-                }
-            }
-        }
-
-        // ------------------------------------------------------------------
-        // Draw Map Data
-        // ------------------------------------------------------------------
-
-        SquadMember selected = squadMembers.get(selectedMember);
-        Position2D camera = selected.position;
-
-        Position2D center = new Position2D(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
-
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                int tx = x + center.x() - camera.x();
-                int ty = y + center.y() - camera.y();
-                if (withinBounds(ty, tx, WINDOW_HEIGHT, WINDOW_WIDTH)) {
-                    char c = gameMap[y][x];
-                    charGrid.setChar(c, ty, tx);
-                    Color bg, fg;
-                    if (c == '.') {
-                        bg = Color.BLACK;
-                        fg = Color.DARK_GRAY;
-                    } else if (c == '#') {
-                        bg = DARK_BROWN;
-                        fg = BROWN;
-                    } else if (c == '"') {
-                        bg = Color.BLACK;
-                        fg = Color.GREEN;
-                    } else if (c == '$') {
-                        bg = Color.BLACK;
-                        fg = Color.YELLOW;
-                    } else if (c == 'M') {
-                        bg = Color.BLACK;
-                        fg = Color.RED;
-                    } else if (c == '~') {
-                        bg = DARK_CYAN;
-                        fg = Color.CYAN;
-                    } else if (c == '!') {
-                        bg = Color.BLACK;
-                        fg = Color.WHITE;
-                    } else {
-                        bg = Color.BLACK;
-                        fg = Color.WHITE;
-                    }
-                    if (highlight[ty][tx]) {
-                        charGrid.setColors(fg, bg, ty, tx);
-                    } else {
-                        charGrid.setColors(bg, fg, ty, tx);
-                    }
-                }
-            }
-        }
-
-        // TODO add draw inverse = true property
-        // add targeting with A and mouseover .... maybe
-
-        // ------------------------------------------------------------------
-        // Draw SquadMembers
-        // ------------------------------------------------------------------
-
-        for (SquadMember squadMember : squadMembers) {
-            int tx = squadMember.position.x() + center.x() - camera.x();
-            int ty = squadMember.position.y() + center.y() - camera.y();
-//            System.out.println("Member " + squadMember.numeral + " at " + new Position2D(tx, ty));
-            if (withinBounds(ty, tx, WINDOW_HEIGHT, WINDOW_WIDTH)) {
-                char c = squadMember.numeral;
-                charGrid.setChar(c, ty, tx);
-                if (Character.getNumericValue(squadMember.numeral) -1 == selectedMember || highlight[ty][tx]) {
-                    charGrid.setColors(Color.WHITE, Color.BLACK, ty, tx);
-                } else {
-                    charGrid.setColors(Color.BLACK, Color.WHITE, ty, tx);
-                }
-            }
-         }
-
-
-        // ------------------------------------------------------------------
-        // Draw HUD displays
-        // ------------------------------------------------------------------
-
-        charGrid.drawBoxBorders(0, 0, WINDOW_HEIGHT - 1, WINDOW_WIDTH - 1);
-        charGrid.drawBoxCorners(0, 0, WINDOW_HEIGHT - 1, WINDOW_WIDTH - 1);
-
-        if (toggleHUD) {
-            int wWidth = 15;
-            int wHeight = 5;
-            int wx = WINDOW_WIDTH - wWidth;
-            int wy = WINDOW_HEIGHT - wHeight;
-            charGrid.fillRect(' ', Color.BLACK, Color.WHITE, wy, wx, wHeight, wWidth);
-            charGrid.drawBoxBorders(wy, wx, wHeight - 1, wWidth - 1);
-            charGrid.drawBoxCorners(wy, wx, wHeight - 1, wWidth - 1);
-
-            int cursor = 0;
-            int tx = wx + 1;
-            int ty = wy + 1;
-
-            String text = "Treasure: ";
-            charGrid.drawText(text, Color.WHITE, ty, tx + cursor);
-            cursor += text.length();
-            text = String.valueOf(treasure);
-            charGrid.drawText(text, Color.YELLOW, ty, tx + cursor);
-
-            cursor = 0;
-            ty += 1;
-            text = "Energy: ";
-            charGrid.drawText(text, Color.WHITE, ty, tx + cursor);
-            cursor += text.length();
-
-            SquadMember activeMember = squadMembers.get(selectedMember);
-            text = String.valueOf(activeMember.energy);
-            charGrid.drawText(text, Color.GREEN, ty, tx + cursor);
-
-            cursor = 0;
-            ty += 1;
-            text = "Turn: ";
-            charGrid.drawText(text, Color.WHITE, ty, tx + cursor);
-            cursor += text.length();
-            text = String.valueOf(turnCounter);
-            charGrid.drawText(text, Color.CYAN, ty, tx + cursor);
-        }
-    }
-
-    List<Position2D> treasures = new ArrayList<>();
-
-    public void addBlobsOfTiles(char tile, List<Position2D> openPaths, int count, int maxNeighbors) {
-        addBlobsOfTiles(tile, openPaths, count, maxNeighbors, false);
-    }
-
-    public void addBlobsOfTiles(char tile, List<Position2D> openPaths, int count, int maxNeighbors, boolean treasures) {
-        for (int i = 0; i < count; i++) {
-            if (openPaths.isEmpty()) {
-                break;
-            }
-            Position2D pos = openPaths.remove(RNG.nextInt(openPaths.size()));
-
-            Stack<Position2D> positions = new Stack<>();
-            positions.add(pos);
-
-            for (int j = 0; j < maxNeighbors; j++) {
-                Position2D next = positions.peek();
-                List<Position2D> neighbors = next.getNeighbors();
-                for (int k = 0; k < neighbors.size(); k++) {
-                    Position2D neighbor = neighbors.get(k);
-                    if (positions.contains(neighbor) || !withinBounds(neighbor, height, width)) {
-                        neighbors.remove(neighbor);
-                    }
-                }
-                if (neighbors.isEmpty()) {
-                    continue;
-                }
-                Position2D nextNeighbor = neighbors.get(RNG.nextInt(neighbors.size()));
-                positions.add(nextNeighbor);
-            }
-
-            for (Position2D position : positions) {
-                if (withinBounds(position, height, width)) {
-                    openPaths.remove(position);
-                    gameMap[position.y()][position.x()] = tile;
-                    if (treasures) {
-                        this.treasures.add(position);
-                    }
-                }
-            }
-        }
+        return updated;
     }
 
 }

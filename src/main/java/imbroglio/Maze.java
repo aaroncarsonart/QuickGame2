@@ -3,6 +3,8 @@ package imbroglio;
 //import com.aaroncarsonart.tarotrl.util.Globals;
 //import com.aaroncarsonart.tarotrl.util.Logger;
 
+import com.aaroncarsonart.quickgame2.Constants;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -31,7 +33,7 @@ public class Maze
     public static final byte	WALL			= 1;
     public static final byte	OUT_OF_BOUNDS	= 2;
 
-    private static final Random RANDOM = new Random();
+    private static final Random RANDOM = Constants.RNG;
 
     private int					width;
     private int					height;
