@@ -1,0 +1,6 @@
+name,weight,cost,health,mana,energy
+Herb,0.01,10,40,0,0
+Health Potion,0.1,50,100,0,0
+Mana Potion,0.1,100,0,20,0
+Food,0.5,5,0,0,50
+Drink,0.5,1,0,0,10

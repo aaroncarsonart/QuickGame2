@@ -17,4 +17,9 @@ public class StatModifier {
     public int getModifier() {
         return modifier;
     }
+
+    public String toString() {
+        String sign = modifier >= 0 ? "+" : "-";
+        return stat.name().toLowerCase() + sign + modifier;
+    }
 }

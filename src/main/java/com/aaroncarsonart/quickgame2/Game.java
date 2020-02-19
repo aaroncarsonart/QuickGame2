@@ -178,6 +178,7 @@ public class Game {
         Callback renameCancelCallback = () -> {
             menuCancelCallback.execute();
             renameMenu.getCharacterBuffer().clear();
+            renameMenu.setIndex(0);
             frame.removeKeyListener(renameMenu);
         };
         Consumer<String> renameOkCallback = (str) -> {

@@ -6,7 +6,6 @@ import imbroglio.Position2D;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
-import java.util.List;
 
 public class StatusMenuView extends MenuView {
     Position2D origin;
@@ -204,7 +203,7 @@ public class StatusMenuView extends MenuView {
         statLabel = "Rng: ";
         game.drawString(g, statLabel, cx, cy, bg, fg);
         cx += statLabel.length();
-        statValue = String.valueOf(hero.getRanged());
+        statValue = String.valueOf(hero.getAccuracy());
         game.drawString(g, statValue, cx, cy, vbg, vfg);
         cx = menuOrigin.x() + column2Off;
 

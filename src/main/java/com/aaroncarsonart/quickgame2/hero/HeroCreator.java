@@ -50,24 +50,24 @@ public class HeroCreator {
             }
         }
 
-        hero.setStrength(Constants.RNG.nextInt(6)
-                + Constants.RNG.nextInt(6)
-                + Constants.RNG.nextInt(6));
-        hero.setStamina(Constants.RNG.nextInt(6)
-                + Constants.RNG.nextInt(6)
-                + Constants.RNG.nextInt(6));
-        hero.setAgility(Constants.RNG.nextInt(6)
-                + Constants.RNG.nextInt(6)
-                + Constants.RNG.nextInt(6));
-        hero.setIntelligence(Constants.RNG.nextInt(6)
-                + Constants.RNG.nextInt(6)
-                + Constants.RNG.nextInt(6));
-        hero.setWisdom(Constants.RNG.nextInt(6)
-                + Constants.RNG.nextInt(6)
-                + Constants.RNG.nextInt(6));
-        hero.setCharisma(Constants.RNG.nextInt(6)
-                + Constants.RNG.nextInt(6)
-                + Constants.RNG.nextInt(6));
+//        hero.setStrength(Constants.RNG.nextInt(6)
+//                + Constants.RNG.nextInt(6)
+//                + Constants.RNG.nextInt(6));
+//        hero.setStamina(Constants.RNG.nextInt(6)
+//                + Constants.RNG.nextInt(6)
+//                + Constants.RNG.nextInt(6));
+//        hero.setAgility(Constants.RNG.nextInt(6)
+//                + Constants.RNG.nextInt(6)
+//                + Constants.RNG.nextInt(6));
+//        hero.setIntelligence(Constants.RNG.nextInt(6)
+//                + Constants.RNG.nextInt(6)
+//                + Constants.RNG.nextInt(6));
+//        hero.setWisdom(Constants.RNG.nextInt(6)
+//                + Constants.RNG.nextInt(6)
+//                + Constants.RNG.nextInt(6));
+//        hero.setCharisma(Constants.RNG.nextInt(6)
+//                + Constants.RNG.nextInt(6)
+//                + Constants.RNG.nextInt(6));
 
         hero.setGold(0);
 

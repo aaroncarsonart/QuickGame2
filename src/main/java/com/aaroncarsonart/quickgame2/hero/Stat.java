@@ -14,6 +14,6 @@ public enum Stat {
 
     ATTACK,
     DEFENSE,
-    RANGED,
+    ACCURACY,
     EVADE
 }
