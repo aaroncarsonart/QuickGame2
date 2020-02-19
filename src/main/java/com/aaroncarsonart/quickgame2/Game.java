@@ -1,9 +1,12 @@
 package com.aaroncarsonart.quickgame2;
 
 import com.aaroncarsonart.quickgame2.hero.Hero;
+import com.aaroncarsonart.quickgame2.hero.HeroCreator;
 import com.aaroncarsonart.quickgame2.menu.BasicVerticalMenuView;
 import com.aaroncarsonart.quickgame2.menu.Callback;
 import com.aaroncarsonart.quickgame2.menu.CenterMenuView;
+import com.aaroncarsonart.quickgame2.menu.ConsoleMenu;
+import com.aaroncarsonart.quickgame2.menu.ConsoleMenuView;
 import com.aaroncarsonart.quickgame2.menu.Menu;
 import com.aaroncarsonart.quickgame2.menu.MenuItem;
 import com.aaroncarsonart.quickgame2.menu.MenuLayout;
@@ -29,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Stack;
+import java.util.function.Consumer;
 
 public class Game {
 
@@ -47,10 +51,11 @@ public class Game {
     private int fontAscent = fontMetrics.getAscent();
 
     private int tileHeight = fontHeight;
-    private int tileWidth = tileHeight;
+    private int tileWidth = fontHeight;
+//    private int tileWidth = fontWidth;
 
     private int gridWidth = 60;
-    private int gridHeight = 40;
+    private int gridHeight = 30;
 
     private int width = gridWidth * tileWidth;
     private int height = gridHeight * tileHeight;
@@ -66,9 +71,10 @@ public class Game {
     private Menu moveMenu;
     private Menu mainMenu;
     private Menu statusMenu;
+    private ConsoleMenu renameMenu;
     private Stack<Menu> menuList;
 
-    private Hero hero;
+    private Hero hero = HeroCreator.createDefaultHero();
 
     private static final Random RANDOM = Constants.RNG;
 
@@ -145,6 +151,7 @@ public class Game {
         // ====================================================================
         // SETUP MENUS
         // ====================================================================
+        menuList = new Stack<>();
         Callback menuCancelCallback = () -> {
             menuList.pop();
             if (menuList.empty()) {
@@ -157,12 +164,37 @@ public class Game {
         // ------------------------------------------------
         statusMenu = new Menu(new StatusMenuView(this), MenuLayout.VERTICAL, menuCancelCallback);
 
+        // ------------------
+        // setup console menu
+        // ------------------
+        MenuView renameMenuView = new ConsoleMenuView(this, "Enter hero name:");
+        Callback renameMenuCallback = () -> {
+            gameMode = GameMode.MENU;
+            menuList.push(renameMenu);
+            frame.addKeyListener(renameMenu);
+        };
+        Callback renameCancelCallback = () -> {
+            menuCancelCallback.execute();
+            renameMenu.getCharacterBuffer().clear();
+            frame.removeKeyListener(renameMenu);
+        };
+        Consumer<String> renameOkCallback = (str) -> {
+            hero.setName(str);
+            renameCancelCallback.execute();
+        };
+        renameMenu = new ConsoleMenu(
+                renameMenuView,
+                MenuLayout.HORIZONTAL,
+                renameCancelCallback,
+                renameOkCallback,
+                20);
 
         // ------------------------------------------------
         // Setup mainMenu
         // ------------------------------------------------
 
         mainMenu = new Menu(new CenterMenuView(this), MenuLayout.VERTICAL, menuCancelCallback);
+        mainMenu.addMenuItem(new MenuItem("Rename Hero", renameMenuCallback));
         mainMenu.addMenuItem(new MenuItem("Status", () -> menuList.push(statusMenu)));
         mainMenu.addMenuItem(new MenuItem("Inventory", () -> {}));
         mainMenu.addMenuItem(new MenuItem("Equipment", () -> {}));
@@ -174,7 +206,6 @@ public class Game {
         // setup moveMenu test
         // ------------------------------------------------
 
-        menuList = new Stack<>();
         Position2D moveMenuOrigin = new Position2D(2,2);
         MenuView moveMenuView = new BasicVerticalMenuView(this, moveMenuOrigin, true);
         moveMenu = new Menu(moveMenuView, MenuLayout.VERTICAL, menuCancelCallback);
@@ -186,7 +217,7 @@ public class Game {
 
     public void start() {
         System.out.println("Hello, world!");
-        frame.setLocationRelativeTo(null);
+//        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
@@ -346,6 +377,9 @@ public class Game {
                     case KeyEvent.VK_M:
                         playerAction = PlayerAction.MOVE_MENU;
                         break;
+                    case KeyEvent.VK_S:
+                        playerAction = PlayerAction.STATUS_MENU;
+                        break;
                     default:
                         playerAction = PlayerAction.UNKNOWN;
                         break;
@@ -376,6 +410,11 @@ public class Game {
                     case CANCEL:
                         gameMode = GameMode.MENU;
                         menuList.push(mainMenu);
+                        updated = true;
+                        break;
+                    case STATUS_MENU:
+                        gameMode = GameMode.MENU;
+                        menuList.push(statusMenu);
                         updated = true;
                         break;
                     case MOVE_MENU:
@@ -451,6 +490,10 @@ public class Game {
 
     public int getGridHeight() {
         return gridHeight;
+    }
+
+    public Hero getHero() {
+        return hero;
     }
 
 }

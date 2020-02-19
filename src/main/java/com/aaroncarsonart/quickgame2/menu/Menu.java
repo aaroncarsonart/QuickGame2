@@ -6,10 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Menu {
-    private List<MenuItem> menuItems;
+    protected List<MenuItem> menuItems;
     private MenuView menuView;
     private MenuLayout menuLayout;
-    private int index;
+    protected int index;
 
     private Callback cancelCallback;
 

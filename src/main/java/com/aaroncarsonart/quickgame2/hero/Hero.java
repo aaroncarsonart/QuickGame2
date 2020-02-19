@@ -28,13 +28,211 @@ public class Hero {
     // inventory
     private int gold;
 
-    // placeholders
+    // placeholder equipment
 
     private String weapon = "Longsword";
     private String shield = "Wooden Shield";
     private String armor = "Chain Mail";
     private String helmet = "Leather Cap";
     private String etc1 = "Gold Earring";
+    private String etc2 = "Silver Necklace";
 
+    // combat stats
 
+    private int attack;
+    private int defense;
+    private int ranged;
+    private int evade;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public HeroClass getHeroClass() {
+        return heroClass;
+    }
+
+    public void setHeroClass(HeroClass heroClass) {
+        this.heroClass = heroClass;
+    }
+
+    public HeroRace getHeroRace() {
+        return heroRace;
+    }
+
+    public void setHeroRace(HeroRace heroRace) {
+        this.heroRace = heroRace;
+    }
+
+    public int getLevel() {
+        return level;
+    }
+
+    public void setLevel(int level) {
+        this.level = level;
+    }
+
+    public int getExp() {
+        return exp;
+    }
+
+    public void setExp(int exp) {
+        this.exp = exp;
+    }
+
+    public int getHealth() {
+        return health;
+    }
+
+    public void setHealth(int health) {
+        this.health = health;
+    }
+
+    public int getMaxHealth() {
+        return maxHealth;
+    }
+
+    public void setMaxHealth(int maxHealth) {
+        this.maxHealth = maxHealth;
+    }
+
+    public int getMana() {
+        return mana;
+    }
+
+    public void setMana(int mana) {
+        this.mana = mana;
+    }
+
+    public int getMaxMana() {
+        return maxMana;
+    }
+
+    public void setMaxMana(int maxMana) {
+        this.maxMana = maxMana;
+    }
+
+    public double getEnergy() {
+        return energy;
+    }
+
+    public void setEnergy(double energy) {
+        this.energy = energy;
+    }
+
+    public int getMaxEnergy() {
+        return maxEnergy;
+    }
+
+    public void setMaxEnergy(int maxEnergy) {
+        this.maxEnergy = maxEnergy;
+    }
+
+    public int getStrength() {
+        return strength;
+    }
+
+    public void setStrength(int strength) {
+        this.strength = strength;
+    }
+
+    public int getStamina() {
+        return stamina;
+    }
+
+    public void setStamina(int stamina) {
+        this.stamina = stamina;
+    }
+
+    public int getAgility() {
+        return agility;
+    }
+
+    public void setAgility(int agility) {
+        this.agility = agility;
+    }
+
+    public int getIntelligence() {
+        return intelligence;
+    }
+
+    public void setIntelligence(int intelligence) {
+        this.intelligence = intelligence;
+    }
+
+    public int getWisdom() {
+        return wisdom;
+    }
+
+    public void setWisdom(int wisdom) {
+        this.wisdom = wisdom;
+    }
+
+    public int getCharisma() {
+        return charisma;
+    }
+
+    public void setCharisma(int charisma) {
+        this.charisma = charisma;
+    }
+
+    public int getGold() {
+        return gold;
+    }
+
+    public void setGold(int gold) {
+        this.gold = gold;
+    }
+
+    public String getWeapon() {
+        return weapon;
+    }
+
+    public void setWeapon(String weapon) {
+        this.weapon = weapon;
+    }
+
+    public String getShield() {
+        return shield;
+    }
+
+    public void setShield(String shield) {
+        this.shield = shield;
+    }
+
+    public String getArmor() {
+        return armor;
+    }
+
+    public void setArmor(String armor) {
+        this.armor = armor;
+    }
+
+    public String getHelmet() {
+        return helmet;
+    }
+
+    public void setHelmet(String helmet) {
+        this.helmet = helmet;
+    }
+
+    public String getEtc1() {
+        return etc1;
+    }
+
+    public void setEtc1(String etc1) {
+        this.etc1 = etc1;
+    }
+
+    public String getEtc2() {
+        return etc2;
+    }
+
+    public void setEtc2(String etc2) {
+        this.etc2 = etc2;
+    }
 }
