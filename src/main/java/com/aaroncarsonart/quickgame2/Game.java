@@ -55,7 +55,7 @@ public class Game {
 //    private int tileWidth = fontWidth;
 
     private int gridWidth = 60;
-    private int gridHeight = 30;
+    private int gridHeight = 40;
 
     private int width = gridWidth * tileWidth;
     private int height = gridHeight * tileHeight;
@@ -148,6 +148,8 @@ public class Game {
 
         player = openPaths.remove(0);
 
+
+
         // ====================================================================
         // SETUP MENUS
         // ====================================================================
@@ -192,8 +194,9 @@ public class Game {
         // ------------------------------------------------
         // Setup mainMenu
         // ------------------------------------------------
-
-        mainMenu = new Menu(new CenterMenuView(this), MenuLayout.VERTICAL, menuCancelCallback);
+        Position2D mainMenuOrigin = new Position2D(1, 1);
+        MenuView mainMenuView = new BasicVerticalMenuView(this, mainMenuOrigin, true);
+        mainMenu = new Menu(mainMenuView, MenuLayout.VERTICAL, menuCancelCallback);
         mainMenu.addMenuItem(new MenuItem("Rename Hero", renameMenuCallback));
         mainMenu.addMenuItem(new MenuItem("Status", () -> menuList.push(statusMenu)));
         mainMenu.addMenuItem(new MenuItem("Inventory", () -> {}));
@@ -217,7 +220,7 @@ public class Game {
 
     public void start() {
         System.out.println("Hello, world!");
-//        frame.setLocationRelativeTo(null);
+        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }

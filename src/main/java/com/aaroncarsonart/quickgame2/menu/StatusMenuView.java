@@ -68,14 +68,15 @@ public class StatusMenuView extends MenuView {
 //        cx = menuOrigin.x();
 //        cy ++;
 
-        int stat2ndColumnOffset = 8;
+        int column2Off = 8;
+        int column3Off = 16;
 
         statLabel = "Lv: ";
         game.drawString(g, statLabel, cx, cy, bg, fg);
         cx += statLabel.length();
         statValue = String.valueOf(hero.getLevel());
         game.drawString(g, statValue, cx, cy, vbg, vfg);
-        cx = menuOrigin.x() + stat2ndColumnOffset;
+        cx = menuOrigin.x() + column2Off;
 
         statLabel = "Exp: ";
         game.drawString(g, statLabel, cx, cy, bg, fg);
@@ -91,14 +92,14 @@ public class StatusMenuView extends MenuView {
         statLabel = "Str: ";
         game.drawString(g, statLabel, cx, cy, bg, fg);
         cx += statLabel.length();
-        statValue = String.valueOf(hero.getStrength());
+        statValue = String.valueOf(hero.getModifiedStrength());
         game.drawString(g, statValue, cx, cy, vbg, vfg);
-        cx = menuOrigin.x() + stat2ndColumnOffset;
+        cx = menuOrigin.x() + column2Off;
 
         statLabel = "Int: ";
         game.drawString(g, statLabel, cx, cy, bg, fg);
         cx += statLabel.length();
-        statValue = String.valueOf(hero.getIntelligence());
+        statValue = String.valueOf(hero.getModifiedIntelligence());
         game.drawString(g, statValue, cx, cy, vbg, vfg);
         cx = menuOrigin.x();
         cy += 1;
@@ -106,14 +107,14 @@ public class StatusMenuView extends MenuView {
         statLabel = "Sta: ";
         game.drawString(g, statLabel, cx, cy, bg, fg);
         cx += statLabel.length();
-        statValue = String.valueOf(hero.getStamina());
+        statValue = String.valueOf(hero.getModifiedStamina());
         game.drawString(g, statValue, cx, cy, vbg, vfg);
-        cx = menuOrigin.x() + stat2ndColumnOffset;
+        cx = menuOrigin.x() + column2Off;
 
         statLabel = "Wis: ";
         game.drawString(g, statLabel, cx, cy, bg, fg);
         cx += statLabel.length();
-        statValue = String.valueOf(hero.getWisdom());
+        statValue = String.valueOf(hero.getModifiedWisdom());
         game.drawString(g, statValue, cx, cy, vbg, vfg);
         cx = menuOrigin.x();
         cy += 1;
@@ -122,14 +123,14 @@ public class StatusMenuView extends MenuView {
         statLabel = "Agi: ";
         game.drawString(g, statLabel, cx, cy, bg, fg);
         cx += statLabel.length();
-        statValue = String.valueOf(hero.getAgility());
+        statValue = String.valueOf(hero.getModifiedAgility());
         game.drawString(g, statValue, cx, cy, vbg, vfg);
-        cx = menuOrigin.x() + stat2ndColumnOffset;
+        cx = menuOrigin.x() + column2Off;
 
         statLabel = "Cha: ";
         game.drawString(g, statLabel, cx, cy, bg, fg);
         cx += statLabel.length();
-        statValue = String.valueOf(hero.getCharisma());
+        statValue = String.valueOf(hero.getModifiedCharisma());
         game.drawString(g, statValue, cx, cy, vbg, vfg);
         cx = menuOrigin.x();
         cy += 2;
@@ -181,61 +182,91 @@ public class StatusMenuView extends MenuView {
         statValue = String.valueOf(hero.getEtc2());
         game.drawString(g, statValue, cx, cy, vbg, vfg);
         cx = menuOrigin.x();
+        cy += 2;
+
+        // combat stats
+
+        statLabel = "Atk: ";
+        game.drawString(g, statLabel, cx, cy, bg, fg);
+        cx += statLabel.length();
+        statValue = String.valueOf(hero.getAttack());
+        game.drawString(g, statValue, cx, cy, vbg, vfg);
+        cx = menuOrigin.x() + column2Off;
+
+        statLabel = "Def: ";
+        game.drawString(g, statLabel, cx, cy, bg, fg);
+        cx += statLabel.length();
+        statValue = String.valueOf(hero.getDefense());
+        game.drawString(g, statValue, cx, cy, vbg, vfg);
+        cx = menuOrigin.x();
+        cy += 1;
+
+        statLabel = "Rng: ";
+        game.drawString(g, statLabel, cx, cy, bg, fg);
+        cx += statLabel.length();
+        statValue = String.valueOf(hero.getRanged());
+        game.drawString(g, statValue, cx, cy, vbg, vfg);
+        cx = menuOrigin.x() + column2Off;
+
+        statLabel = "Eva: ";
+        game.drawString(g, statLabel, cx, cy, bg, fg);
+        cx += statLabel.length();
+        statValue = String.valueOf(hero.getEvade());
+        game.drawString(g, statValue, cx, cy, vbg, vfg);
+        cx = menuOrigin.x() + column3Off;
+        cy = menuOrigin.y() + 2;
+
+        // vital stats
+
+        statLabel = "HP: ";
+        game.drawString(g, statLabel, cx, cy, bg, fg);
+        cx += statLabel.length();
+        statValue = String.valueOf(hero.getHealth());
+        game.drawString(g, statValue, cx, cy, vbg, vfg);
+        cx += statValue.length();
+        statLabel = "/";
+        game.drawString(g, statLabel, cx, cy, bg, fg);
+        cx += statLabel.length();
+        statValue = String.valueOf(hero.getModifiedMaxHealth());
+        game.drawString(g, statValue, cx, cy, vbg, vfg);
+        cx = menuOrigin.x() + column3Off;
+        cy += 1;
+
+        statLabel = "MP: ";
+        game.drawString(g, statLabel, cx, cy, bg, fg);
+        cx += statLabel.length();
+        statValue = String.valueOf(hero.getMana());
+        game.drawString(g, statValue, cx, cy, vbg, vfg);
+        cx += statValue.length();
+        statLabel = "/";
+        game.drawString(g, statLabel, cx, cy, bg, fg);
+        cx += statLabel.length();
+        statValue = String.valueOf(hero.getModifiedMaxMana());
+        game.drawString(g, statValue, cx, cy, vbg, vfg);
+        cx = menuOrigin.x() + column3Off;
+        cy += 2;
+
+        statLabel = "EP: ";
+        game.drawString(g, statLabel, cx, cy, bg, fg);
+        cx += statLabel.length();
+        statValue = String.valueOf(Double.valueOf(hero.getEnergy()).intValue());
+        game.drawString(g, statValue, cx, cy, vbg, vfg);
+        cx += statValue.length();
+        statLabel = "/";
+        game.drawString(g, statLabel, cx, cy, bg, fg);
+        cx += statLabel.length();
+        statValue = String.valueOf(hero.getModifiedMaxEnergy());
+        game.drawString(g, statValue, cx, cy, vbg, vfg);
+        cx = menuOrigin.x() + column3Off;
         cy += 1;
 
 
-
+        // ----------------------------
         // draw status menu label
+        // ----------------------------
         String statusString = "Status";
         Position2D menuLabelOrigin = new Position2D(1, 1);
         game.drawString(g, statusString, menuLabelOrigin.x(), menuLabelOrigin.y(), bg, fg);
         drawMenuBorders(g, menuLabelOrigin, statusString.length(), 1);
-
     }
-
-    private void drawMenuContents(Graphics2D g, Menu menu) {
-        List<MenuItem> items = menu.getMenuItems();
-        int height = items.size();
-        int width = 0;
-        for (int i = 0; i < items.size(); i++) {
-            width = Math.max(width, items.get(i).getLabel().length());
-        }
-//            for (int x = 0; x < width; x++) {
-//                for (int y = 0; y < height; y++) {
-//                    drawChar(g, " ", x, y, Color.BLACK, Color.BLACK);
-//                }
-//            }
-        int selectedIndex = menu.getIndex();
-        for (int i = 0; i < items.size(); i++) {
-            MenuItem item = items.get(i);
-            String label = item.getLabel();
-            for (int j = 0; j < width; j++) {
-
-                // get character to print
-                char c;
-                if (j < label.length()) {
-                    c = label.charAt(j);
-                } else {
-                    c = ' ';
-                }
-
-                // get colors
-                Color bg, fg;
-                if (i == selectedIndex) {
-                    bg = Color.WHITE;
-                    fg = Color.BLACK;
-                } else {
-                    bg = Color.BLACK;
-                    fg = Color.WHITE;
-                }
-
-                int x = origin.x() + j;
-                int y = origin.y() + i;
-
-                // draw character
-                game.drawChar(g, c, x, y, bg, fg);
-            }
-        }
-    }
-
 }

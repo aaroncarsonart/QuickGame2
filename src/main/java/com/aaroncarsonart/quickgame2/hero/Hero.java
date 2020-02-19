@@ -1,5 +1,10 @@
 package com.aaroncarsonart.quickgame2.hero;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class Hero {
 
     private String name;
@@ -37,12 +42,14 @@ public class Hero {
     private String etc1 = "Gold Earring";
     private String etc2 = "Silver Necklace";
 
-    // combat stats
+    Map<Stat, List<StatModifier>> statModifiers;
 
-    private int attack;
-    private int defense;
-    private int ranged;
-    private int evade;
+    public Hero() {
+        statModifiers = new HashMap();
+        for (Stat stat : Stat.values()) {
+            statModifiers.put(stat, new ArrayList<>());
+        }
+    }
 
     public String getName() {
         return name;
@@ -96,6 +103,13 @@ public class Hero {
         return maxHealth;
     }
 
+    public int getModifiedMaxHealth() {
+        int modifiers = statModifiers.get(Stat.MAX_HEALTH).stream()
+                .mapToInt(StatModifier::getModifier)
+                .sum();
+        return maxHealth + modifiers;
+    }
+
     public void setMaxHealth(int maxHealth) {
         this.maxHealth = maxHealth;
     }
@@ -110,6 +124,13 @@ public class Hero {
 
     public int getMaxMana() {
         return maxMana;
+    }
+
+    public int getModifiedMaxMana() {
+        int modifiers = statModifiers.get(Stat.MAX_MANA).stream()
+                .mapToInt(StatModifier::getModifier)
+                .sum();
+        return maxMana + modifiers;
     }
 
     public void setMaxMana(int maxMana) {
@@ -128,12 +149,26 @@ public class Hero {
         return maxEnergy;
     }
 
+    public int getModifiedMaxEnergy() {
+        int modifiers = statModifiers.get(Stat.MAX_ENERGY).stream()
+                .mapToInt(StatModifier::getModifier)
+                .sum();
+        return maxEnergy + modifiers;
+    }
+
     public void setMaxEnergy(int maxEnergy) {
         this.maxEnergy = maxEnergy;
     }
 
     public int getStrength() {
         return strength;
+    }
+
+    public int getModifiedStrength() {
+        int modifiers = statModifiers.get(Stat.STRENGTH).stream()
+                .mapToInt(StatModifier::getModifier)
+                .sum();
+        return strength + modifiers;
     }
 
     public void setStrength(int strength) {
@@ -144,6 +179,13 @@ public class Hero {
         return stamina;
     }
 
+    public int getModifiedStamina() {
+        int modifiers = statModifiers.get(Stat.STAMINA).stream()
+                .mapToInt(StatModifier::getModifier)
+                .sum();
+        return stamina + modifiers;
+    }
+
     public void setStamina(int stamina) {
         this.stamina = stamina;
     }
@@ -152,10 +194,23 @@ public class Hero {
         return agility;
     }
 
+    public int getModifiedAgility() {
+        int modifiers = statModifiers.get(Stat.AGILITY).stream()
+                .mapToInt(StatModifier::getModifier)
+                .sum();
+        return agility + modifiers;
+    }
+
     public void setAgility(int agility) {
         this.agility = agility;
     }
 
+    public int getModifiedIntelligence() {
+        int modifiers = statModifiers.get(Stat.INTELLIGENCE).stream()
+                .mapToInt(StatModifier::getModifier)
+                .sum();
+        return intelligence + modifiers;
+    }
     public int getIntelligence() {
         return intelligence;
     }
@@ -168,12 +223,26 @@ public class Hero {
         return wisdom;
     }
 
+    public int getModifiedWisdom() {
+        int modifiers = statModifiers.get(Stat.WISDOM).stream()
+                .mapToInt(StatModifier::getModifier)
+                .sum();
+        return wisdom + modifiers;
+    }
+
     public void setWisdom(int wisdom) {
         this.wisdom = wisdom;
     }
 
     public int getCharisma() {
         return charisma;
+    }
+
+    public int getModifiedCharisma() {
+        int modifiers = statModifiers.get(Stat.CHARISMA).stream()
+                .mapToInt(StatModifier::getModifier)
+                .sum();
+        return charisma + modifiers;
     }
 
     public void setCharisma(int charisma) {
@@ -234,5 +303,37 @@ public class Hero {
 
     public void setEtc2(String etc2) {
         this.etc2 = etc2;
+    }
+
+    public int getAttack() {
+        int base = strength / 4;
+        int modifiers = statModifiers.get(Stat.ATTACK).stream()
+                .mapToInt(StatModifier::getModifier)
+                .sum();
+        return base + modifiers;
+    }
+
+    public int getDefense() {
+        int base = stamina / 4;
+        int modifiers = statModifiers.get(Stat.DEFENSE).stream()
+                .mapToInt(StatModifier::getModifier)
+                .sum();
+        return base + modifiers;
+    }
+
+    public int getRanged() {
+        int base = strength / 8 + agility / 8;
+        int modifiers = statModifiers.get(Stat.RANGED).stream()
+                .mapToInt(StatModifier::getModifier)
+                .sum();
+        return base + modifiers;
+    }
+
+    public int getEvade() {
+        int base = agility / 4;
+        int modifiers = statModifiers.get(Stat.EVADE).stream()
+                .mapToInt(StatModifier::getModifier)
+                .sum();
+        return base + modifiers;
     }
 }

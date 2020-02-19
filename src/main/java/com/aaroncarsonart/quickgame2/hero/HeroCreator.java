@@ -24,6 +24,32 @@ public class HeroCreator {
         hero.setEnergy(energy);
         hero.setMaxEnergy(energy);
 
+        int statPoints = 6 * 10;
+        for (int i = 0; i < statPoints; i++) {
+            int next = Constants.RNG.nextInt(6);
+            if (next == 0) {
+                int newValue = hero.getStrength() + 1;
+                hero.setStrength(newValue);
+            } else if (next == 1) {
+                int newValue = hero.getStamina() + 1;
+                hero.setStamina(newValue);
+            } else if (next == 2) {
+                int newValue = hero.getAgility() + 1;
+                hero.setAgility(newValue);
+            } else if (next == 3) {
+                int newValue = hero.getIntelligence() + 1;
+                hero.setIntelligence(newValue);
+            } else if (next == 4) {
+                int newValue = hero.getWisdom() + 1;
+                hero.setWisdom(newValue);
+            } else if (next == 5) {
+                int newValue = hero.getCharisma() + 1;
+                hero.setCharisma(newValue);
+            } else {
+                System.out.println(next);
+            }
+        }
+
         hero.setStrength(Constants.RNG.nextInt(6)
                 + Constants.RNG.nextInt(6)
                 + Constants.RNG.nextInt(6));
