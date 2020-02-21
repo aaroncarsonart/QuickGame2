@@ -2,6 +2,7 @@ package com.aaroncarsonart.quickgame2.map;
 
 import com.aaroncarsonart.quickgame2.Constants;
 import imbroglio.Direction;
+import imbroglio.Maze;
 import imbroglio.Position2D;
 
 import java.util.ArrayList;
@@ -28,13 +29,49 @@ public class DungeonGenerator {
     private int width;
     private int height;
     private char[][] cells;
-    private Random rng = Constants.RNG;
+    private static Random rng = new Random(1); // Constants.RNG;
 
     public DungeonGenerator(int width, int height) {
         this.width = width;
         this.height = height;
         this.cells = new char[height][width];
-        generateRoomedDungeon();
+        List<Room> rooms = generateRoomedDungeon();
+        for (Room room : rooms) {
+            for (Position2D door : room.getDoors()) {
+                cells[door.y()][door.x()] = '.';
+            }
+        }
+        List<Set<Position2D>> components = this.getConnectedComponents('.');
+//        Iterator<Set<Position2D>> componentIterator = components.iterator();
+//        while (componentIterator.hasNext()) {
+//            Set<Position2D> component = componentIterator.next();
+//            Position2D candidate = component.iterator().next();
+//            for (Room room : rooms) {
+//                if (room.contains(candidate)) {
+//                    componentIterator.remove();
+//                    break;
+//                }
+//            }
+//        }
+        List<Position2D> cooridors = connectDisconnectedComponents(components, '.');
+        drawBorders(cooridors, '#');
+        for (Room room : rooms) {
+            for (Position2D door : room.getDoors()) {
+                Position2D above = door.above();
+                Position2D below = door.below();
+                Position2D left = door.left();
+                Position2D right = door.right();
+                if (cells[above.y()][above.x()] == ' ' || cells[below.y()][below.x()] == ' ' ||
+                        cells[left.y()][left.x()] == ' ' || cells[right.y()][right.x()] == ' ') {
+                    cells[door.y()][door.x()] = '#';
+                } else if (((cells[above.y()][above.x()] == '#' && cells[below.y()][below.x()] == '#') ||
+                        (cells[left.y()][left.x()] == '#' && cells[right.y()][right.x()] == '#'))) {
+                    cells[door.y()][door.x()] = '+';
+                }
+            }
+        }
+
+
     }
 
     public int getWidth() {
@@ -49,7 +86,7 @@ public class DungeonGenerator {
         return cells;
     }
 
-    private void generateRoomedDungeon() {
+    private List<Room> generateRoomedDungeon() {
         List<Position2D> openCells = new ArrayList<>();
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
@@ -183,14 +220,21 @@ public class DungeonGenerator {
                 } else {
                     path = pathfindDFS(door1, door2, ".+");
                 }
-
-                for (Position2D cell : path) {
-                    cells[cell.y()][cell.x()] = '.';
-                    cooridors.add(cell);
+//                if (path.isEmpty()) {
+//                    cells[door1.y()][door1.x()] = '#';
+//                } else {
+                    for (Position2D cell : path) {
+                        cells[cell.y()][cell.x()] = '.';
+                        cooridors.add(cell);
+//                    }
                 }
             }
         }
+        drawBorders(cooridors, '#');
+        return rooms;
+    }
 
+    private void drawBorders(List<Position2D> cooridors, char borderChar) {
         for (Position2D pos : cooridors) {
             List<Position2D> surroundingCells = Arrays.asList(
                     pos.above().left(), pos.above(), pos.above().right(),
@@ -199,10 +243,11 @@ public class DungeonGenerator {
             for (Position2D surroundingCell : surroundingCells) {
                 if (//withinBounds(surroundingCell) &&
                         cells[surroundingCell.y()][surroundingCell.x()] == ' ') {
-                    cells[surroundingCell.y()][surroundingCell.x()] = '#';
+                    cells[surroundingCell.y()][surroundingCell.x()] = borderChar;
                 }
             }
         }
+
     }
 
     private Direction getEmptyDirection(Position2D digger){
@@ -268,6 +313,8 @@ public class DungeonGenerator {
         initial.add(digger);
 
         stack.push(initial);
+
+        // TODO WORKING ON THIS
 
         List<Direction> directions = new ArrayList<>();
         directions.add(Direction.UP);
@@ -409,11 +456,246 @@ public class DungeonGenerator {
         return sb.toString();
     }
 
+    /**
+     * Creates a graph traversal of this maze.
+     *
+     * @return A graph of positional data.
+     */
+    public List<Set<Position2D>> getConnectedComponents(char componentChar) {
+
+        List<Set<Position2D>> components = new ArrayList<Set<Position2D>>();
+        HashSet<Position2D> visited = new HashSet<Position2D>();
+        Queue<Position2D> queue = new LinkedList<Position2D>();
+
+        Position2D start = findFirstUnvisitedCell(componentChar, visited);
+
+        while (start != null) {
+            Set<Position2D> component = new HashSet<Position2D>();
+            components.add(component);
+            // add them to the queue, and begin searching.
+            visited.add(start);
+            queue.add(start);
+            component.add(start);
+
+            // find all connected components to this element.
+            while (!queue.isEmpty()) {
+                Position2D current = queue.remove();
+                for (Position2D neighbor : current.getNeighbors()) {
+
+                    // case 1: been here already.
+                    if (visited.contains(neighbor)) {
+                        // LOG.trace("already visited");
+                        continue;
+                    }
+
+                    // case 2: it is a wall
+                    else if (cells[neighbor.y()][neighbor.x()] != componentChar) {
+                        // LOG.trace("found wall");
+                        continue;
+                    }
+
+                    // case 4: it is an open path
+                    else {
+                        // LOG.trace("found path from " + current + " to " + neighbor);
+
+                        // mark this origin as added
+                        visited.add(neighbor);
+
+                        //graph.addVertex(neighbor);
+                        //graph.addUndirectedEdge(current, neighbor);
+                        component.add(neighbor);
+
+                        // add this state to the state queue.
+                        queue.add(neighbor);
+                    }
+                }
+            }
+            // start = null;
+            start = findFirstUnvisitedCell(PATH, visited);
+        }
+
+        return components;
+    }
+
+    /**
+     * Get the first unvisited cell from this Maze of the given type, using a
+     * boolean visited array that is tracking what positions have been visited.
+     *
+     * @param cellType The type of cell to find.
+     * @param visited The array of booleans that contain visited data
+     * @return The top, left-most unvisited origin, or null if every origin
+     *         has been visited.
+     */
+    public Position2D findFirstUnvisitedCell(char cellType,
+                                             HashSet<Position2D> visited) {
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                if (!visited.contains(new Position2D(x, y))
+                        && cells[y][x] == cellType) {
+                    return new Position2D(x, y);
+                }
+            }
+        }
+        return null;
+    }
+
+
+    /**
+     * Using a graph, finds all connected components, then connects them.
+     * @return A list of the positions that were added.
+     */
+    public List<Position2D> connectDisconnectedComponents(List<Set<Position2D>> components, char componentChar) {
+        List<Position2D> addedPositions = new ArrayList<>();
+
+        // ***************************************
+        // 1. get disconnected components.
+        // ***************************************
+//        System.out.printf("Disconnected Components: %d\n", components.size());
+//        System.out.printf("Paths: %d\n", countPaths());
+
+        // *******************************************************
+        // 2. remove the front set, as a starting point.
+        // ********************************************************
+        Iterator<Set<Position2D>> setIterator = components.iterator();
+        Set<Position2D> result = null;
+        if(setIterator.hasNext()){
+            result = setIterator.next();
+            setIterator.remove();
+        }
+
+        // connect each other component to this one.
+        while(setIterator.hasNext()){
+            // get and remove the nextInt element.
+            Set<Position2D> nextComponent = setIterator.next();
+            setIterator.remove();
+
+            // dig a path from this set to the result.
+            //TODO: dig to the nextInt thing.
+            Iterator<Position2D> it = nextComponent.iterator();
+            Position2D digger = null;
+            if (it.hasNext()){
+                digger = it.next();
+                it.remove();
+            }
+
+            // find a path to the result.
+            List<Position2D> path = findPathToComponent(result, digger);
+
+            // make the path positions, and add them to the result.
+            for(Position2D p : path){
+                cells[p.y()][p.x()] = PATH;
+                result.add(p);
+                addedPositions.add(p);
+            }
+
+            // add all the positions in this set to the result set.
+            for(Position2D p : nextComponent){
+                result.add(p);
+            }
+        }
+        return addedPositions;
+    }
+
+    /**
+     * This method finds a path from a starting point to a set of Positions.
+     * This path may meander over existing paths or walls to get there.  It
+     * does not modify the underlying data structure.
+     * @param component The set of Positions to find a path to.
+     * @param start The starting origin.
+     * @return
+     */
+    public List<Position2D> findPathToComponent(Set<Position2D> component, Position2D start){
+        HashSet<Position2D> visited = new HashSet<Position2D>();
+        LinkedList<Position2D> path = new LinkedList<Position2D>();
+        path.add(start);
+        visited.add(start);
+
+        //check neighboring positions.
+        List<Direction> directions = new ArrayList<>();
+        directions.add(Direction.UP);
+        directions.add(Direction.DOWN);
+        directions.add(Direction.LEFT);
+        directions.add(Direction.RIGHT);
+        Collections.shuffle(directions);
+        int iterationRngLimit = 4 + rng.nextInt(4);
+        int iterations = 1 + rng.nextInt(iterationRngLimit);
+
+        // run search
+        while(!path.isEmpty()){
+            Position2D current = path.peek();
+
+            // TODO WORKING ON THIS
+
+            List<Position2D> neighbors = new ArrayList<>();
+            neighbors.add(current.moveTowards(directions.get(0)));
+            neighbors.add(current.moveTowards(directions.get(1)));
+            neighbors.add(current.moveTowards(directions.get(2)));
+            neighbors.add(current.moveTowards(directions.get(3)));
+
+            // reset if necessary
+            iterations --;
+            if (iterations == 0) {
+                directions.clear();
+                directions.add(Direction.UP);
+                directions.add(Direction.DOWN);
+                directions.add(Direction.LEFT);
+                directions.add(Direction.RIGHT);
+                Collections.shuffle(directions);
+                iterations = 1 + rng.nextInt(iterationRngLimit);
+            }
+
+            Iterator<Position2D> it = neighbors.iterator();
+            while(it.hasNext()){
+                Position2D neighbor = it.next();
+
+                // found a collect_treasure (finished)
+                if(component.contains(neighbor)) {
+                    path.push(neighbor);
+                    return path;
+                }
+                // otherwise, filter invalid positions.
+                else if(!withinBounds(neighbor) || visited.contains(neighbor)){
+                    it.remove();
+                }
+            }
+
+            switch(neighbors.size()){
+                case 0:
+                    // origin is exhausted.
+                    path.pop();
+                    break;
+
+                default:
+                    // push a random neighboring Position2D onto the stack.
+                    Position2D next = neighbors.get(rng.nextInt(neighbors.size()));
+                    path.push(next);
+                    visited.add(next);
+                    break;
+            }
+        }
+
+        // if reached, no treasures were found.
+        return new LinkedList<>();
+    }
+
+
 
     public static void main(String[] args) {
         DungeonGenerator dungeonGenerator = new DungeonGenerator(60, 40);
 //        dungeonGenerator.generateRoomedDungeonWithWalls();
 //        dungeonGenerator.generateRoomedDungeon();
+//        List<Set<Position2D>> components = dungeonGenerator.getConnectedComponents();
+//        String s = "!@#$%^&*()_+-={}|[]\\:\";'<>?,./";
+//        for (Set<Position2D> component : components) {
+//            int index = rng.nextInt(s.length());
+//            char displayChar = s.charAt(index);
+//            s = s.substring(0,index) + s.substring(index + 1);
+//            for (Position2D p : component) {
+//                dungeonGenerator.cells[p.y()][p.x()] = displayChar;
+//            }
+//        }
+
+
 
         System.out.println(dungeonGenerator);
     }

@@ -112,55 +112,7 @@ public class Game {
         // init oldMenuList
         oldMenuList = new ArrayList<>();
 
-        // ------------------------------------------------
-        // init charGrid
-        // ------------------------------------------------
-        DungeonGenerator generator = new DungeonGenerator(gridWidth, gridHeight - 3);
-        char[][] cells = generator.getCells();
-        charGrid = new char[gridHeight][gridWidth];
-        for (int x = 0; x < generator.getWidth(); x++) {
-            for (int y = 0; y < generator.getHeight(); y++) {
-                charGrid[y][x] = cells[y][x];
-            }
-        }
-
-//        Maze maze = Maze.generateRandomWalledMaze(gridWidth, gridHeight);
-//        Maze maze = Maze.generateCellularAutomataRoom(gridWidth, gridHeight - 3);
-//        for (int i = 0; i < 3; i++) {
-//            maze.cellularAutomataIteration();
-//            maze.connectDisconnectedComponents();
-//        }
-//        charGrid = new char[gridHeight][gridWidth];
-//        for (int x = 0; x < gridWidth; x++) {
-//            for (int y = 0; y < gridHeight; y++) {
-//                byte b = maze.getCell(x, y);
-//                char c;
-//                if (b == Maze.WALL) {
-//                    c = '#';
-//                } else if (b == Maze.PATH) {
-//                    c = '.';
-//                } else {
-//                    c = ' ';
-//                }
-//                charGrid[y][x] = c;
-//            }
-//        }
-
-        // ------------------------------------------------
-        // Populate charGrid
-        // ------------------------------------------------
-        List<Position2D> openPaths = new ArrayList<>();
-        for (int y = 0; y < gridHeight; y++) {
-            for (int x = 0; x < gridWidth; x++) {
-                char c = charGrid[y][x];
-                if (c == '.') {
-                    openPaths.add(new Position2D(x, y));
-                }
-            }
-        }
-
-        player = openPaths.remove(0);
-
+        initCharGrid();
 
 
         // ====================================================================
@@ -240,6 +192,57 @@ public class Game {
             inventoryMenu.addMenuItem(new MenuItem(label, () -> {}));
         }
         return inventoryMenu;
+    }
+
+    private void initCharGrid() {
+        // ------------------------------------------------
+        // init charGrid
+        // ------------------------------------------------
+        DungeonGenerator generator = new DungeonGenerator(gridWidth, gridHeight - 3);
+        char[][] cells = generator.getCells();
+        charGrid = new char[gridHeight][gridWidth];
+        for (int x = 0; x < generator.getWidth(); x++) {
+            for (int y = 0; y < generator.getHeight(); y++) {
+                charGrid[y][x] = cells[y][x];
+            }
+        }
+
+//        Maze maze = Maze.generateRandomWalledMaze(gridWidth, gridHeight);
+//        Maze maze = Maze.generateCellularAutomataRoom(gridWidth, gridHeight - 3);
+//        for (int i = 0; i < 3; i++) {
+//            maze.cellularAutomataIteration();
+//            maze.connectDisconnectedComponents();
+//        }
+//        charGrid = new char[gridHeight][gridWidth];
+//        for (int x = 0; x < gridWidth; x++) {
+//            for (int y = 0; y < gridHeight; y++) {
+//                byte b = maze.getCell(x, y);
+//                char c;
+//                if (b == Maze.WALL) {
+//                    c = '#';
+//                } else if (b == Maze.PATH) {
+//                    c = '.';
+//                } else {
+//                    c = ' ';
+//                }
+//                charGrid[y][x] = c;
+//            }
+//        }
+
+        // ------------------------------------------------
+        // Populate charGrid
+        // ------------------------------------------------
+        List<Position2D> openPaths = new ArrayList<>();
+        for (int y = 0; y < gridHeight; y++) {
+            for (int x = 0; x < gridWidth; x++) {
+                char c = charGrid[y][x];
+                if (c == '.') {
+                    openPaths.add(new Position2D(x, y));
+                }
+            }
+        }
+
+        player = openPaths.remove(0);
     }
 
     public void start() {
@@ -352,6 +355,11 @@ public class Game {
                         break;
                     case KeyEvent.VK_I:
                         playerAction = PlayerAction.INVENTORY_MENU;
+                        break;
+                    case KeyEvent.VK_R:
+                        playerAction = PlayerAction.UNKNOWN;
+                        initCharGrid();
+                        canvas.repaint();
                         break;
                     default:
                         playerAction = PlayerAction.UNKNOWN;
