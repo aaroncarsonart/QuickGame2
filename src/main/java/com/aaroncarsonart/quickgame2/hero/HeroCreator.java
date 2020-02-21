@@ -1,6 +1,12 @@
 package com.aaroncarsonart.quickgame2.hero;
 
 import com.aaroncarsonart.quickgame2.Constants;
+import com.aaroncarsonart.quickgame2.inventory.Inventory;
+import com.aaroncarsonart.quickgame2.inventory.Item;
+import com.aaroncarsonart.quickgame2.inventory.ItemCreator;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class HeroCreator {
 
@@ -70,6 +76,25 @@ public class HeroCreator {
 //                + Constants.RNG.nextInt(6));
 
         hero.setGold(0);
+
+        // ---------------------------------------------------------
+        // populate mock inventory
+        // ---------------------------------------------------------
+        Inventory inventory = new Inventory(60);
+        List<Item> itemList = ItemCreator.loadEquipmentFromCSV();
+        for (Item item : itemList) {
+            inventory.add(item);
+        }
+        itemList = ItemCreator.loadRecoveryItemsFromCSV();
+        for (Item item : itemList) {
+            inventory.add(item);
+            inventory.add(item);
+            inventory.add(item);
+            inventory.add(item);
+            inventory.add(item);
+        }
+//        inventory.sort();
+        hero.setInventory(inventory);
 
         return hero;
     }

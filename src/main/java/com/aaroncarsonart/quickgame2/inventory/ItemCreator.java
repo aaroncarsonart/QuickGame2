@@ -15,17 +15,17 @@ import java.util.Scanner;
 
 public class ItemCreator {
 
+    private static int itemId = 0;
+
     public static List<Item> createTestInventory() {
         List<Item> inventory = new ArrayList<>();
 
-        inventory.add(new Equipment("Longsword", 2, 20, EquipmentType.WEAPON,
+        inventory.add(new Equipment("Longsword", 2, 20, false, EquipmentType.WEAPON,
                 new StatModifier(Stat.ATTACK, 10)));
-        inventory.add(new Equipment("WoodenShield", 3, 10, EquipmentType.SHIELD,
+        inventory.add(new Equipment("WoodenShield", 3, 10, false, EquipmentType.SHIELD,
                 new StatModifier(Stat.DEFENSE, 3)));
-        inventory.add(new Equipment("Chain Mail", 20, 20, EquipmentType.ARMOR,
+        inventory.add(new Equipment("Chain Mail", 20, 20, false, EquipmentType.ARMOR,
                 new StatModifier(Stat.DEFENSE, 10)));
-        inventory.add(new Equipment("Longsword", 2, 20, EquipmentType.WEAPON,
-                new StatModifier(Stat.ATTACK, 10)));
 
         return inventory;
     }
@@ -54,8 +54,10 @@ public class ItemCreator {
                     continue;
                 }
 
+                int id = Integer.parseInt(valuesMap.get("id"));
                 double weight = Double.parseDouble(valuesMap.get("weight"));
                 int cost = Integer.parseInt(valuesMap.get("cost"));
+                boolean stackable = Boolean.parseBoolean(valuesMap.get("stackable"));
                 EquipmentType type = EquipmentType.valueOf(valuesMap.get("type"));
 
                 // read stat modifiers
@@ -73,7 +75,8 @@ public class ItemCreator {
                 }
 
                 // build item and add to inventory
-                Equipment equipment = new Equipment(name, weight, cost, type, statModifiers);
+                Equipment equipment = new Equipment(name, weight, cost, stackable, type, statModifiers);
+                equipment.setId(itemId++);
                 inventory.add(equipment);
             }
         } catch (URISyntaxException e) {
@@ -108,8 +111,10 @@ public class ItemCreator {
                     continue;
                 }
 
+                int id = Integer.parseInt(valuesMap.get("id"));
                 double weight = Double.parseDouble(valuesMap.get("weight"));
                 int cost = Integer.parseInt(valuesMap.get("cost"));
+                boolean stackable = Boolean.parseBoolean(valuesMap.get("stackable"));
 
                 int health = Integer.parseInt(valuesMap.get("health"));
                 int mana = Integer.parseInt(valuesMap.get("mana"));
@@ -117,7 +122,8 @@ public class ItemCreator {
 
 
                 // build item and add to inventory
-                RecoveryItem item = new RecoveryItem(name, weight, cost, health, mana, energy);
+                RecoveryItem item = new RecoveryItem(name, weight, cost, stackable, health, mana, energy);
+                item.setId(itemId++);
                 inventory.add(item);
             }
         } catch (URISyntaxException e) {
@@ -130,10 +136,26 @@ public class ItemCreator {
 
 
     public static void main(String[] args) {
-        List<Item> inventory = loadEquipmentFromCSV();
-        inventory.addAll(loadRecoveryItemsFromCSV());
-        for (Item item : inventory) {
+        List<Item> itemList = loadEquipmentFromCSV();
+        itemList.addAll(loadRecoveryItemsFromCSV());
+        for (Item item : itemList) {
             System.out.println(item);
+        }
+
+        Inventory inventory = new Inventory(20);
+        for (Item item : itemList) {
+            inventory.add(item);
+            inventory.add(item);
+        }
+        inventory.sort();
+        for (Inventory.Slot slot : inventory.getSlots()) {
+            if (slot.item == null) {
+                System.out.println();
+            } else if (slot.quantity > 1) {
+                System.out.printf("%s x%d\n", slot.item.name, slot.quantity);
+            } else {
+                System.out.println(slot.item.name);
+            }
         }
     }
 }

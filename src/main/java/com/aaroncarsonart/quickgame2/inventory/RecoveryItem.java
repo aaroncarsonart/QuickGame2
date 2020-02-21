@@ -1,13 +1,16 @@
 package com.aaroncarsonart.quickgame2.inventory;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class RecoveryItem extends Item {
 
     private int health;
     private int mana;
     private int energy;
 
-    public RecoveryItem(String name, double weight, int cost, int health, int mana, int energy) {
-        super(name, weight, cost);
+    public RecoveryItem(String name, double weight, int cost, boolean stackable, int health, int mana, int energy) {
+        super(name, weight, cost, stackable);
         this.health = health;
         this.mana = mana;
         this.energy = energy;
@@ -26,7 +29,17 @@ public class RecoveryItem extends Item {
     }
 
     public String toString() {
-        return String.format("%s,recovery=[health+%d,mana+%d,energy+%d]",
-                super.toString(), health, mana, energy);
+        List<String> values = new ArrayList<>();
+        if (health > 0) {
+            values.add("health+" + health);
+        }
+        if (mana > 0) {
+            values.add("mana+" + mana);
+        }
+        if (energy > 0) {
+            values.add("energy+" + energy);
+        }
+        return String.format("%s,recovery=%s",
+                super.toString(), values);
     }
 }

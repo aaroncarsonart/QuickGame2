@@ -36,6 +36,9 @@ public class ConsoleMenu extends Menu implements KeyListener {
         System.out.println("KEY_PRESSED e.getKeyChar() = '" + e.getKeyChar() + "'");
 
         switch(e.getKeyCode()) {
+            case KeyEvent.VK_ESCAPE:
+                getCancelCallback().execute();
+                break;
             case KeyEvent.VK_SHIFT:
             case KeyEvent.VK_CONTROL:
             case KeyEvent.VK_ALT:

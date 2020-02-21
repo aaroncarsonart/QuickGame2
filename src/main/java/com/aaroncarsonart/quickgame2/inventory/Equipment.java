@@ -10,12 +10,12 @@ public class Equipment extends Item {
     private List<StatModifier> statModifiers;
     private EquipmentType type;
 
-    public Equipment(String name, double weight, int cost, EquipmentType type, StatModifier ... statModifiers) {
-        this(name, weight, cost, type, Arrays.asList(statModifiers));
+    public Equipment(String name, double weight, int cost, boolean stackable, EquipmentType type, StatModifier ... statModifiers) {
+        this(name, weight, cost, stackable, type, Arrays.asList(statModifiers));
     }
 
-    public Equipment(String name, double weight, int cost, EquipmentType type, List<StatModifier> statModifiers) {
-        super(name, weight, cost);
+    public Equipment(String name, double weight, int cost, boolean stackable, EquipmentType type, List<StatModifier> statModifiers) {
+        super(name, weight, cost, stackable);
         this.statModifiers = statModifiers;
         this.type = type;
     }

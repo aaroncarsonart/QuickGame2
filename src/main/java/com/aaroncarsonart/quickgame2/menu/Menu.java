@@ -10,6 +10,8 @@ public class Menu {
     private MenuView menuView;
     private MenuLayout menuLayout;
     protected int index;
+    private int startOffset = 0;
+    private int maxLength = 0;
 
     private Callback cancelCallback;
 
@@ -21,6 +23,22 @@ public class Menu {
         this.cancelCallback = cancelCallback;
     }
 
+    public int getMaxLength() {
+        return maxLength;
+    }
+
+    public void setMaxLength(int maxLength) {
+        this.maxLength = maxLength;
+    }
+
+    public int getStartOffset() {
+        return startOffset;
+    }
+
+    public void setStartOffset(int startOffset) {
+        this.startOffset = startOffset;
+    }
+
     public void addMenuItem(MenuItem menuItem) {
         this.menuItems.add(menuItem);
     }
@@ -29,20 +47,33 @@ public class Menu {
         index +=1;
         if (index > menuItems.size() - 1) {
             index = 0;
+            if (maxLength > 0) {
+                startOffset = 0;
+            }
+        } else if (maxLength > 0 && index >= startOffset + maxLength) {
+            startOffset += 1;
         }
-//        if (index < menuItems.size() - 1) {
-//            index ++;
-//        }
+//        System.out.println();
+//        System.out.println("Index: " + index);
+//        System.out.println("startOffset: " + startOffset);
+//        System.out.println("maxLength: " + maxLength);
     }
 
     public void previous() {
         index -=1;
         if (index < 0) {
             index = menuItems.size() - 1;
+            if (maxLength > 0 && index > maxLength) {
+                startOffset = menuItems.size() - maxLength;
+            }
+
+        } else if (maxLength > 0 && index < startOffset) {
+            startOffset -= 1;
         }
-//        if (index > 0) {
-//            index --;
-//        }
+//        System.out.println();
+//        System.out.println("Index: " + index);
+//        System.out.println("startOffset: " + startOffset);
+//        System.out.println("maxLength: " + maxLength);
     }
 
     public MenuView getMenuView() {

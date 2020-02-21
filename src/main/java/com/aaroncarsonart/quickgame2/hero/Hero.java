@@ -1,5 +1,7 @@
 package com.aaroncarsonart.quickgame2.hero;
 
+import com.aaroncarsonart.quickgame2.inventory.Inventory;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +34,7 @@ public class Hero {
 
     // inventory
     private int gold;
+    private Inventory inventory;
 
     // placeholder equipment
 
@@ -335,5 +338,13 @@ public class Hero {
                 .mapToInt(StatModifier::getModifier)
                 .sum();
         return base + modifiers;
+    }
+
+    public Inventory getInventory() {
+        return inventory;
+    }
+
+    public void setInventory(Inventory inventory) {
+        this.inventory = inventory;
     }
 }

@@ -2,16 +2,20 @@ package com.aaroncarsonart.quickgame2;
 
 import com.aaroncarsonart.quickgame2.hero.Hero;
 import com.aaroncarsonart.quickgame2.hero.HeroCreator;
+import com.aaroncarsonart.quickgame2.inventory.Inventory;
+import com.aaroncarsonart.quickgame2.map.DungeonGenerator;
 import com.aaroncarsonart.quickgame2.menu.BasicVerticalMenuView;
 import com.aaroncarsonart.quickgame2.menu.Callback;
 import com.aaroncarsonart.quickgame2.menu.CenterMenuView;
 import com.aaroncarsonart.quickgame2.menu.ConsoleMenu;
 import com.aaroncarsonart.quickgame2.menu.ConsoleMenuView;
+import com.aaroncarsonart.quickgame2.menu.InventoryMenuView;
 import com.aaroncarsonart.quickgame2.menu.Menu;
 import com.aaroncarsonart.quickgame2.menu.MenuItem;
 import com.aaroncarsonart.quickgame2.menu.MenuLayout;
 import com.aaroncarsonart.quickgame2.menu.MenuView;
 import com.aaroncarsonart.quickgame2.menu.StatusMenuView;
+import com.aaroncarsonart.quickgame2.menu.VerticalMenuView;
 import imbroglio.Direction;
 import imbroglio.Maze;
 import imbroglio.Position2D;
@@ -111,27 +115,30 @@ public class Game {
         // ------------------------------------------------
         // init charGrid
         // ------------------------------------------------
+        DungeonGenerator generator = new DungeonGenerator(gridWidth, gridHeight);
+        charGrid = generator.getCells();
+
 //        Maze maze = Maze.generateRandomWalledMaze(gridWidth, gridHeight);
-        Maze maze = Maze.generateCellularAutomataRoom(gridWidth, gridHeight - 3);
-        for (int i = 0; i < 3; i++) {
-            maze.cellularAutomataIteration();
-            maze.connectDisconnectedComponents();
-        }
-        charGrid = new char[gridHeight][gridWidth];
-        for (int x = 0; x < gridWidth; x++) {
-            for (int y = 0; y < gridHeight; y++) {
-                byte b = maze.getCell(x, y);
-                char c;
-                if (b == Maze.WALL) {
-                    c = '#';
-                } else if (b == Maze.PATH) {
-                    c = '.';
-                } else {
-                    c = ' ';
-                }
-                charGrid[y][x] = c;
-            }
-        }
+//        Maze maze = Maze.generateCellularAutomataRoom(gridWidth, gridHeight - 3);
+//        for (int i = 0; i < 3; i++) {
+//            maze.cellularAutomataIteration();
+//            maze.connectDisconnectedComponents();
+//        }
+//        charGrid = new char[gridHeight][gridWidth];
+//        for (int x = 0; x < gridWidth; x++) {
+//            for (int y = 0; y < gridHeight; y++) {
+//                byte b = maze.getCell(x, y);
+//                char c;
+//                if (b == Maze.WALL) {
+//                    c = '#';
+//                } else if (b == Maze.PATH) {
+//                    c = '.';
+//                } else {
+//                    c = ' ';
+//                }
+//                charGrid[y][x] = c;
+//            }
+//        }
 
         // ------------------------------------------------
         // Populate charGrid
@@ -196,27 +203,37 @@ public class Game {
         // Setup mainMenu
         // ------------------------------------------------
         Position2D mainMenuOrigin = new Position2D(1, 1);
-        MenuView mainMenuView = new BasicVerticalMenuView(this, mainMenuOrigin, true);
+        MenuView mainMenuView = new VerticalMenuView(this, mainMenuOrigin, "Main Menu");
         mainMenu = new Menu(mainMenuView, MenuLayout.VERTICAL, menuCancelCallback);
+//        mainMenu.setMaxLength(3);
         mainMenu.addMenuItem(new MenuItem("Rename Hero", renameMenuCallback));
         mainMenu.addMenuItem(new MenuItem("Status", () -> menuList.push(statusMenu)));
-        mainMenu.addMenuItem(new MenuItem("Inventory", () -> {}));
+        mainMenu.addMenuItem(new MenuItem("Inventory", () -> menuList.push(createInventoryMenu())));
         mainMenu.addMenuItem(new MenuItem("Equipment", () -> {}));
         mainMenu.addMenuItem(new MenuItem("Save", () -> {}));
         mainMenu.addMenuItem(new MenuItem("Exit", () -> System.exit(0)));
+    }
 
+    private Menu createInventoryMenu() {
+        Callback menuCancelCallback = () -> {
+            menuList.pop();
+            if (menuList.empty()) {
+                gameMode = GameMode.MAP;
+            }
+        };
 
-        // ------------------------------------------------
-        // setup moveMenu test
-        // ------------------------------------------------
+        Position2D menuOrigin = new Position2D(1, 1);
+        MenuView menuView = new InventoryMenuView(this, menuOrigin, "Inventory", hero.getInventory());
+        Menu inventoryMenu = new Menu(menuView, MenuLayout.VERTICAL, menuCancelCallback);
+        inventoryMenu.setMaxLength(30);
 
-        Position2D moveMenuOrigin = new Position2D(2,2);
-        MenuView moveMenuView = new BasicVerticalMenuView(this, moveMenuOrigin, true);
-        moveMenu = new Menu(moveMenuView, MenuLayout.VERTICAL, menuCancelCallback);
-        moveMenu.addMenuItem(new MenuItem("Move UP", () -> moveMap(PlayerAction.UP)));
-        moveMenu.addMenuItem(new MenuItem("Move DOWN", () -> moveMap(PlayerAction.DOWN)));
-        moveMenu.addMenuItem(new MenuItem("Move RIGHT", () -> moveMap(PlayerAction.RIGHT)));
-        moveMenu.addMenuItem(new MenuItem("Move LEFT", () -> moveMap(PlayerAction.LEFT)));
+        Inventory inventory = hero.getInventory();
+        Inventory.Slot[] inventorySlots = inventory.getSlots();
+        for (Inventory.Slot slot : inventorySlots) {
+            String label = slot.getLabel();
+            inventoryMenu.addMenuItem(new MenuItem(label, () -> {}));
+        }
+        return inventoryMenu;
     }
 
     public void start() {
@@ -268,6 +285,9 @@ public class Game {
                 } else if (c == '.') {
                     bg = Color.BLACK;
                     fg = Color.DARK_GRAY;
+                } else if (c == '+') {
+                    bg = Color.BLACK;
+                    fg = Color.YELLOW;
                 } else {
                     bg = Color.BLACK;
                     fg = Color.WHITE;
@@ -283,66 +303,6 @@ public class Game {
         Color pfg = Color.WHITE;
 
         drawChar(graphics2D, '@', px, py, pbg, pfg);
-    }
-
-    private void drawMenus(Graphics2D graphics2D) {
-        int menuWidth = 0;
-        for (String menuItem : oldMenuList) {
-            menuWidth = Math.max(menuWidth, menuItem.length());
-        }
-        int menuHeight = oldMenuList.size();
-
-        int mx = (gridWidth - menuWidth) / 2;
-        int my = (gridHeight - menuHeight) / 2;
-
-        // ------------------------------------------------
-        // draw oldMenuList contents
-        // ------------------------------------------------
-        for (int y = 0; y < menuHeight; y++) {
-            for (int x = 0; x < menuWidth; x++) {
-                Color bg = Color.BLACK;
-                Color fg = Color.WHITE;
-                if (y == menuCursor) {
-                    bg = Color.WHITE;
-                    fg = Color.BLACK;
-                }
-
-                String menuItem = oldMenuList.get(y);
-                char c;
-                if (x < menuItem.length()) {
-                    c = menuItem.charAt(x);
-                } else {
-                    c = ' ';
-                }
-                drawChar(graphics2D, c, mx + x, my + y, bg, fg);
-            }
-        }
-        // ------------------------------------------------
-        // draw oldMenuList borders
-        // ------------------------------------------------
-        Color bg = Color.BLACK;
-        Color fg = Color.DARK_GRAY;
-        // ─│┌┐└┘
-
-        for (int y = 0; y < menuHeight; y++) {
-            int x = mx - 1;
-            drawChar(graphics2D, '│', x, my + y, bg, fg);
-            x = mx + menuWidth;
-            drawChar(graphics2D, '│', x, my + y, bg, fg);
-        }
-
-        for (int x = 0; x < menuWidth; x++) {
-            int y = my - 1;
-            drawChar(graphics2D, '─', mx + x, y, bg, fg);
-            y = my + menuHeight;
-            drawChar(graphics2D, '─', mx + x, y, bg, fg);
-        }
-        drawChar(graphics2D, '┌', -1 + mx, -1 + my, bg, fg);
-        drawChar(graphics2D, '┐', mx + menuWidth, -1 + my, bg, fg);
-        drawChar(graphics2D, '└', -1 + mx, my + menuHeight, bg, fg);
-        drawChar(graphics2D, '┘', mx + menuWidth, my + menuHeight, bg, fg);
-
-
     }
 
     public KeyListener createKeyListener() {
@@ -384,6 +344,9 @@ public class Game {
                     case KeyEvent.VK_S:
                         playerAction = PlayerAction.STATUS_MENU;
                         break;
+                    case KeyEvent.VK_I:
+                        playerAction = PlayerAction.INVENTORY_MENU;
+                        break;
                     default:
                         playerAction = PlayerAction.UNKNOWN;
                         break;
@@ -419,6 +382,11 @@ public class Game {
                     case STATUS_MENU:
                         gameMode = GameMode.MENU;
                         menuList.push(statusMenu);
+                        updated = true;
+                        break;
+                    case INVENTORY_MENU:
+                        gameMode = GameMode.MENU;
+                        menuList.push(createInventoryMenu());
                         updated = true;
                         break;
                     case MOVE_MENU:
@@ -464,10 +432,11 @@ public class Game {
         boolean passable = false;
         if (withinBounds(next.y(), next.x())) {
             char c = charGrid[next.y()][next.x()];
-            passable = c == '.';
+            passable = ".+".indexOf(c) != -1;
         }
         if (passable) {
             player = next;
+            hero.setEnergy(hero.getEnergy() - 0.05);
             updated = true;
         }
         System.out.println("PlayerPos: " + player);
