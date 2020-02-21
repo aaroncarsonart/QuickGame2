@@ -63,7 +63,7 @@ public class DungeonGenerator {
         // ------------------------------------------------
         int min = 5;
         int max = 12;
-        int attempts = 20;
+        int attempts = 30;
         List<Room> rooms = new ArrayList<>();
 
         for (int i = 0; i < attempts; i++) {
@@ -165,7 +165,6 @@ public class DungeonGenerator {
         List<Position2D> cooridors = new ArrayList<>();
         for (Room room : rooms) {
             for (Position2D door : room.getDoors()) {
-                System.out.println(door);
 
                 Position2D door1 = door;
                 Position2D door2;
@@ -242,37 +241,6 @@ public class DungeonGenerator {
                 cells[pos.y() + 1][pos.x()] == '#' && cells[pos.y() - 1][pos.x()] == '.' ||
                 cells[pos.y()][pos.x() + 1] == '.' && cells[pos.y()][pos.x() - 1] == '#' ||
                 cells[pos.y()][pos.x() + 1] == '#' && cells[pos.y()][pos.x() - 1] == '.';
-    }
-
-    public String toString() {
-        return toBorderedString();
-    }
-
-    public String toBorderedString() {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append('+');
-        for (int x = 0; x < width; x++) {
-            sb.append(" -");
-        }
-        sb.append(" +\n");
-
-        for (int y = 0; y < height; y++) {
-            sb.append('|');
-            for (int x = 0; x < width; x++) {
-                sb.append(' ');
-                sb.append(cells[y][x]);
-            }
-            sb.append(" |\n");
-        }
-
-        sb.append('+');
-        for (int x = 0; x < width; x++) {
-            sb.append(" -");
-        }
-        sb.append(" +\n");
-
-        return sb.toString();
     }
 
     /**
@@ -410,10 +378,42 @@ public class DungeonGenerator {
         return cell != ' ' && cell != '.';
     }
 
+    public String toString() {
+        return toBorderedString();
+    }
+
+    public String toBorderedString() {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append('+');
+        for (int x = 0; x < width; x++) {
+            sb.append(" -");
+        }
+        sb.append(" +\n");
+
+        for (int y = 0; y < height; y++) {
+            sb.append('|');
+            for (int x = 0; x < width; x++) {
+                sb.append(' ');
+                sb.append(cells[y][x]);
+            }
+            sb.append(" |\n");
+        }
+
+        sb.append('+');
+        for (int x = 0; x < width; x++) {
+            sb.append(" -");
+        }
+        sb.append(" +\n");
+
+        return sb.toString();
+    }
+
+
     public static void main(String[] args) {
         DungeonGenerator dungeonGenerator = new DungeonGenerator(60, 40);
 //        dungeonGenerator.generateRoomedDungeonWithWalls();
-        dungeonGenerator.generateRoomedDungeon();
+//        dungeonGenerator.generateRoomedDungeon();
 
         System.out.println(dungeonGenerator);
     }

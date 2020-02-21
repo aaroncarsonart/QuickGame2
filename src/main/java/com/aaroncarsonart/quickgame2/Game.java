@@ -115,8 +115,14 @@ public class Game {
         // ------------------------------------------------
         // init charGrid
         // ------------------------------------------------
-        DungeonGenerator generator = new DungeonGenerator(gridWidth, gridHeight);
-        charGrid = generator.getCells();
+        DungeonGenerator generator = new DungeonGenerator(gridWidth, gridHeight - 3);
+        char[][] cells = generator.getCells();
+        charGrid = new char[gridHeight][gridWidth];
+        for (int x = 0; x < generator.getWidth(); x++) {
+            for (int y = 0; y < generator.getHeight(); y++) {
+                charGrid[y][x] = cells[y][x];
+            }
+        }
 
 //        Maze maze = Maze.generateRandomWalledMaze(gridWidth, gridHeight);
 //        Maze maze = Maze.generateCellularAutomataRoom(gridWidth, gridHeight - 3);
