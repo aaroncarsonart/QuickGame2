@@ -55,8 +55,8 @@ public class Game {
     private int fontAscent = fontMetrics.getAscent();
 
     private int tileHeight = fontHeight;
-    private int tileWidth = fontHeight;
-//    private int tileWidth = fontWidth;
+//    private int tileWidth = fontHeight;
+    private int tileWidth = fontWidth;
 
     private int gridWidth = 60;
     private int gridHeight = 40;
@@ -89,6 +89,10 @@ public class Game {
         @Override
         public void paint(Graphics g) {
             Graphics2D graphics2D = (Graphics2D) g;
+            graphics2D.setFont(font);
+            graphics2D.setRenderingHints(new RenderingHints(
+                    RenderingHints.KEY_TEXT_ANTIALIASING,
+                    RenderingHints.VALUE_TEXT_ANTIALIAS_ON));
             drawCharGrid(graphics2D);
             if (gameMode == GameMode.MENU) {
                 //drawMenus(graphics2D);
@@ -276,11 +280,6 @@ public class Game {
     public void drawCharGrid(Graphics2D graphics2D) {
         graphics2D.setColor(Color.BLACK);
         graphics2D.fillRect(0, 0, width, height);
-
-        graphics2D.setFont(font);
-        graphics2D.setRenderingHints(new RenderingHints(
-                RenderingHints.KEY_TEXT_ANTIALIASING,
-                RenderingHints.VALUE_TEXT_ANTIALIAS_ON));
 
         // draw background
         for (int gx = 0; gx < gridWidth; gx++) {
