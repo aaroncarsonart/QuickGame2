@@ -1,8 +1,6 @@
 package com.aaroncarsonart.quickgame2.map;
 
-import com.aaroncarsonart.quickgame2.Constants;
 import imbroglio.Direction;
-import imbroglio.Maze;
 import imbroglio.Position2D;
 
 import java.util.ArrayList;
@@ -21,10 +19,7 @@ public class DungeonGenerator {
 
     public static final char PATH = '.';
     public static final char WALL = '#';
-
-    public enum Type {
-        WALLED_DUNGEON
-    }
+    public static final char CORRIDOR_WALL = '#';
 
     private int width;
     private int height;
@@ -54,7 +49,7 @@ public class DungeonGenerator {
 //            }
 //        }
         List<Position2D> cooridors = connectDisconnectedComponents(components, '.');
-        drawBorders(cooridors, '#');
+        drawBorders(cooridors, CORRIDOR_WALL);
         for (Room room : rooms) {
             for (Position2D door : room.getDoors()) {
                 Position2D above = door.above();
@@ -228,7 +223,7 @@ public class DungeonGenerator {
                 }
             }
         }
-        drawBorders(cooridors, '#');
+        drawBorders(cooridors, CORRIDOR_WALL);
         return rooms;
     }
 

@@ -33,6 +33,7 @@ import java.awt.RenderingHints;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Stack;
@@ -42,6 +43,7 @@ public class Game {
 
     public static final Color BROWN = new Color(165, 82, 0);
     public static final Color DARK_BROWN = new Color(50, 15, 0);
+    public static final Color DARKER_GRAY = new Color(15, 15, 15);
 
     private int fontSize = 16;
 
@@ -55,8 +57,8 @@ public class Game {
     private int fontAscent = fontMetrics.getAscent();
 
     private int tileHeight = fontHeight;
-//    private int tileWidth = fontHeight;
-    private int tileWidth = fontWidth;
+    private int tileWidth = fontHeight;
+//    private int tileWidth = fontWidth;
 
     private int gridWidth = 60;
     private int gridHeight = 40;
@@ -116,8 +118,15 @@ public class Game {
         // init oldMenuList
         oldMenuList = new ArrayList<>();
 
+        initVisible();
         initCharGrid();
 
+//        List<Position2D> line = plotLine(0, 0, 5, 5);
+//        for (int i = 0; i < line.size(); i++){
+//            Position2D next = line.get(i);
+//            char c = Character.forDigit(i, 10);
+//            charGrid[next.y()][next.x()] = c;
+//        }
 
         // ====================================================================
         // SETUP MENUS
@@ -247,6 +256,7 @@ public class Game {
         }
 
         player = openPaths.remove(0);
+        fov(player, FIELD_OF_VIEW_RANGE);
     }
 
     public void start() {
@@ -290,15 +300,32 @@ public class Game {
                 if (c == '#') {
                     bg = DARK_BROWN;
                     fg = BROWN;
+                } else if (c == '=') {
+                    bg = DARKER_GRAY;
+                    fg = Color.DARK_GRAY;
                 } else if (c == '.') {
                     bg = Color.BLACK;
-                    fg = Color.DARK_GRAY;
+                    fg = Color.LIGHT_GRAY;
                 } else if (c == '+') {
                     bg = Color.BLACK;
                     fg = Color.YELLOW;
                 } else {
                     bg = Color.BLACK;
                     fg = Color.WHITE;
+                }
+
+                // FOV colors
+                if (visible[gy][gx] == UNKNOWN) {
+                    bg = Color.BLACK;
+                    fg = Color.BLACK;
+                } else if (visible[gy][gx] == KNOWN) {
+                    if (c == '#') {
+                        bg = DARKER_GRAY;
+                        fg = Color.DARK_GRAY;
+                    } else {
+                        bg = Color.BLACK;
+                        fg = Color.DARK_GRAY;
+                    }
                 }
                 drawChar(graphics2D, c, gx, gy, bg, fg);
             }
@@ -355,11 +382,11 @@ public class Game {
                     case KeyEvent.VK_I:
                         playerAction = PlayerAction.INVENTORY_MENU;
                         break;
-                    case KeyEvent.VK_R:
-                        playerAction = PlayerAction.UNKNOWN;
-                        initCharGrid();
-                        canvas.repaint();
-                        break;
+//                    case KeyEvent.VK_R:
+//                        playerAction = PlayerAction.UNKNOWN;
+//                        initCharGrid();
+//                        canvas.repaint();
+//                        break;
                     default:
                         playerAction = PlayerAction.UNKNOWN;
                         break;
@@ -449,11 +476,123 @@ public class Game {
         }
         if (passable) {
             player = next;
+            fov(player, FIELD_OF_VIEW_RANGE);
             hero.setEnergy(hero.getEnergy() - 0.05);
             updated = true;
         }
         System.out.println("PlayerPos: " + player);
         return updated;
+    }
+
+    public int distance(int x1, int y1, int x2, int y2) {
+        return (int) Math.sqrt((x2 - x1) * (x2 - x1)  + (y2 - y1) * (y2 - y1));
+    }
+
+    /**
+     * Algorithm taken directly from: https://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#Java
+     * @param x1 The first x coordinate.
+     * @param y1 The first y coordinate.
+     * @param x2 The second x coordinate.
+     * @param y2 The second y coordinate.
+     * @return A list of positions representing a line plotted between the coordinates.
+     */
+    private List<Position2D> plotLine(int x1, int y1, int x2, int y2) {
+        List<Position2D> plot = new ArrayList<>();
+        // delta of exact value and rounded value of the dependent variable
+        int d = 0;
+
+        int dx = Math.abs(x2 - x1);
+        int dy = Math.abs(y2 - y1);
+
+        int dx2 = 2 * dx; // slope scaling factors to
+        int dy2 = 2 * dy; // avoid floating point
+
+        int ix = x1 < x2 ? 1 : -1; // increment direction
+        int iy = y1 < y2 ? 1 : -1;
+
+        int x = x1;
+        int y = y1;
+
+        if (dx >= dy) {
+            while (true) {
+                plot.add(new Position2D(x, y));
+                if (x == x2)
+                    break;
+                x += ix;
+                d += dy2;
+                if (d > dx) {
+                    y += iy;
+                    d -= dx2;
+                }
+            }
+        } else {
+            while (true) {
+                plot.add(new Position2D(x, y));
+                if (y == y2)
+                    break;
+                y += iy;
+                d += dx2;
+                if (d > dy) {
+                    x += ix;
+                    d -= dy2;
+                }
+            }
+        }
+        return plot;
+    }
+
+    public static final char UNKNOWN = '#';
+    public static final char KNOWN = '.';
+    public static final char VISIBLE = '!';
+
+    private char[][] visible;
+    private static final int FIELD_OF_VIEW_RANGE = 10;
+
+    private void initVisible() {
+        visible = new char[gridHeight][gridWidth];
+        for (int x = 0; x < gridWidth; x++) {
+            for (int y = 0; y < gridHeight; y++) {
+                visible[y][x] = UNKNOWN;
+            }
+        }
+    }
+
+    private void fov(Position2D center, int range) {
+        // clear old lighting
+        for (int x = 0; x < gridWidth; x++) {
+            for (int y = 0; y < gridHeight; y++) {
+                if (visible[y][x] == VISIBLE) {
+                    visible[y][x] = KNOWN;
+                }
+            }
+        }
+
+        // use simple line tracing
+        for (int x = center.x() - range; x < center.x() + range; x++) {
+            for (int y = center.y() - range; y < center.y() + range; y++) {
+                if (withinBounds(y, x)) {
+                    if (distance(center.x(), center.y(), x, y) <= range) {
+                        List<Position2D> line = plotLine(center.x(), center.y(), x, y);
+
+                        // the first position is always visible
+                        Iterator<Position2D> it = line.iterator();
+                        Position2D next = it.next();
+                        visible[next.y()][next.x()] = VISIBLE;
+
+                        while (it.hasNext()) {
+                            next = it.next();
+                            visible[next.y()][next.x()] = VISIBLE;
+
+                            // check if a blocking character is encountered
+                            char c = charGrid[next.y()][next.x()];
+                            if ("#+".indexOf(c) != -1) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private boolean withinBounds(int y, int x) {
