@@ -895,113 +895,6 @@ public class Maze
     }
 
     /**
-     * Intended for use with randomly-generated mazes only. This removes a
-     * number of walls to create more connected passages, and make it easier to
-     * navigate the maze.
-     */
-    public void setDifficultyOLD(Difficulty difficulty) {
-        // used to calculate how many paths to remove
-        int multiplier = 0;
-
-        // set addedPaths according to difficulty level
-        switch (difficulty) {
-            case EASY:
-                multiplier = 2;
-                break;
-            case NORMAL:
-                multiplier = 1;
-                break;
-            case HARD:
-                multiplier = 0;
-                break;
-        }
-
-        // create a list of valid cells to iterate over
-        ArrayList<Position2D> checkList = new ArrayList<Position2D>();
-        for (int x = 1; x < width - 1; x++) {
-            for (int y = 1; y < height - 1; y++) {
-                // if the coordinate is a wall
-                if (cells[x][y] == 1) {
-                    // add it to the list to iterate over
-                    checkList.add(new Position2D(x, y));
-                }
-            }
-        }
-        int addedPaths = ((width + height) / 4) * multiplier;
-        Random random = RANDOM;
-
-        // Iterate up to the amount of added paths
-        for (int i = 0; i < addedPaths; i++) {
-            int x = 1, y = 1;
-            boolean validPanel = false;
-            while (!validPanel && checkList.size() != 0) {
-
-                // generateMapFrom random number within the outer border
-                Position2D temp = checkList.get(random.nextInt(checkList.size()));
-                x = temp.x();
-                y = temp.y();
-
-				/*
-				 * if the panel is a wall, and it is between two other panels on
-				 * either the x or y axis that are both paths ...
-				 */
-
-                validPanel = (cells[x][y + 1] == 0 && cells[x][y - 1] == 0)
-                        || (cells[x + 1][y] == 0 && cells[x - 1][y] == 0);
-                checkList.remove(temp);
-            }
-
-            // remove the panel if is a valid location
-            if (validPanel) cells[x][y] = PATH;
-
-        }
-        removeIslands();
-    }
-
-    /**
-     * Removes panels that is surrounded by whitespace, or removes a panel if it
-     * only has one other panel in one of the four corners.
-     */
-    private void removeIslands() {
-        for (int x = 1; x < width - 1; x++) {
-            for (int y = 1; y < height - 1; y++) {
-                int counter = 0;
-                // if the origin is a wall
-                if ((cells[x - 1][y + 1] == 0 && cells[x][y + 1] == 0
-                        && cells[x + 1][y + 1] == 0 && cells[x - 1][y] == 0
-                        && cells[x][y] == 1 && cells[x + 1][y] == 0
-                        && cells[x - 1][y - 1] == 0 && cells[x][y - 1] == 0 && cells[x + 1][y - 1] == 0)
-                        || (cells[x - 1][y + 1] == 1 && cells[x][y + 1] == 0
-                        && cells[x + 1][y + 1] == 0
-                        && cells[x - 1][y] == 0 && cells[x][y] == 1
-                        && cells[x + 1][y] == 0
-                        && cells[x - 1][y - 1] == 0
-                        && cells[x][y - 1] == 0 && cells[x + 1][y - 1] == 0)
-                        || (cells[x - 1][y + 1] == 0 && cells[x][y + 1] == 0
-                        && cells[x + 1][y + 1] == 1
-                        && cells[x - 1][y] == 0 && cells[x][y] == 1
-                        && cells[x + 1][y] == 0
-                        && cells[x - 1][y - 1] == 0
-                        && cells[x][y - 1] == 0 && cells[x + 1][y - 1] == 0)
-                        || (cells[x - 1][y + 1] == 0 && cells[x][y + 1] == 0
-                        && cells[x + 1][y + 1] == 0
-                        && cells[x - 1][y] == 0 && cells[x][y] == 1
-                        && cells[x + 1][y] == 0
-                        && cells[x - 1][y - 1] == 1
-                        && cells[x][y - 1] == 0 && cells[x + 1][y - 1] == 0)
-                        || (cells[x - 1][y + 1] == 0 && cells[x][y + 1] == 0
-                        && cells[x + 1][y + 1] == 0
-                        && cells[x - 1][y] == 0 && cells[x][y] == 1
-                        && cells[x + 1][y] == 0
-                        && cells[x - 1][y - 1] == 0
-                        && cells[x][y - 1] == 0 && cells[x + 1][y - 1] == 1)) {
-                    cells[x][y] = PATH;
-                }
-            }
-        }
-    }
-
-    /**
      * Create a new Dungeon with the given parameters.
      *
      * @param width The width in tiles.
@@ -1501,7 +1394,12 @@ public class Maze
             boolean tunnels = true;
             boolean cavern = false;
 
-            testDisconnectedComponents();
+            //testDisconnectedComponents();
+
+            Maze maze = Maze.generateRandomWalledMaze(5, 5);
+            System.out.println(maze);
+            maze = Maze.createScaledCopy(maze, 2);
+            System.out.println(maze);
 			/*
 			 * Maze[] mazes = { Maze.generateRandomWalledMaze(60,60),
 			 * Maze.generateCellularAutomataRoom(40,40), };
@@ -1585,6 +1483,7 @@ public class Maze
 
         Maze m = Maze.generateCellularAutomataRoom(50, 50);
         m.connectDisconnectedComponents();
+        System.out.println(m);
         // LOG.trace(m);
     }
 

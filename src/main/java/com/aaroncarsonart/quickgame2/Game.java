@@ -4,6 +4,8 @@ import com.aaroncarsonart.quickgame2.hero.Hero;
 import com.aaroncarsonart.quickgame2.hero.HeroCreator;
 import com.aaroncarsonart.quickgame2.inventory.Inventory;
 import com.aaroncarsonart.quickgame2.map.DungeonGenerator;
+import com.aaroncarsonart.quickgame2.map.GameMap;
+import com.aaroncarsonart.quickgame2.map.GameMapCreator;
 import com.aaroncarsonart.quickgame2.menu.BasicVerticalMenuView;
 import com.aaroncarsonart.quickgame2.menu.Callback;
 import com.aaroncarsonart.quickgame2.menu.CenterMenuView;
@@ -16,6 +18,7 @@ import com.aaroncarsonart.quickgame2.menu.MenuLayout;
 import com.aaroncarsonart.quickgame2.menu.MenuView;
 import com.aaroncarsonart.quickgame2.menu.StatusMenuView;
 import com.aaroncarsonart.quickgame2.menu.VerticalMenuView;
+import com.aaroncarsonart.quickgame2.util.Bresenham;
 import imbroglio.Direction;
 import imbroglio.Maze;
 import imbroglio.Position2D;
@@ -81,7 +84,11 @@ public class Game {
     private Stack<Menu> menuList;
 
     private Hero hero = HeroCreator.createDefaultHero();
+    private GameMap gameMap;
 
+    private char[][] visible;
+
+    private static final int FIELD_OF_VIEW_RANGE = 10;
     private static final Random RANDOM = Constants.RNG;
 
     /**
@@ -127,7 +134,10 @@ public class Game {
 //            char c = Character.forDigit(i, 10);
 //            charGrid[next.y()][next.x()] = c;
 //        }
+        initMenus();
+    }
 
+    private void initMenus() {
         // ====================================================================
         // SETUP MENUS
         // ====================================================================
@@ -208,17 +218,21 @@ public class Game {
     }
 
     private void initCharGrid() {
+        gameMap = GameMapCreator.getGameMap(gridWidth, gridHeight);
+        charGrid = gameMap.getCells();
+        visible = gameMap.getVisible();
+
         // ------------------------------------------------
         // init charGrid
         // ------------------------------------------------
-        DungeonGenerator generator = new DungeonGenerator(gridWidth, gridHeight - 3);
-        char[][] cells = generator.getCells();
-        charGrid = new char[gridHeight][gridWidth];
-        for (int x = 0; x < generator.getWidth(); x++) {
-            for (int y = 0; y < generator.getHeight(); y++) {
-                charGrid[y][x] = cells[y][x];
-            }
-        }
+//        DungeonGenerator generator = new DungeonGenerator(gridWidth, gridHeight - 3);
+//        char[][] cells = generator.getCells();
+//        charGrid = new char[gridHeight][gridWidth];
+//        for (int x = 0; x < generator.getWidth(); x++) {
+//            for (int y = 0; y < generator.getHeight(); y++) {
+//                charGrid[y][x] = cells[y][x];
+//            }
+//        }
 
 //        Maze maze = Maze.generateRandomWalledMaze(gridWidth, gridHeight);
 //        Maze maze = Maze.generateCellularAutomataRoom(gridWidth, gridHeight - 3);
@@ -241,6 +255,8 @@ public class Game {
 //                charGrid[y][x] = c;
 //            }
 //        }
+
+
 
         // ------------------------------------------------
         // Populate charGrid
@@ -298,8 +314,10 @@ public class Game {
                 char c = charGrid[gy][gx];
                 Color bg, fg;
                 if (c == '#') {
-                    bg = DARK_BROWN;
-                    fg = BROWN;
+//                    bg = DARK_BROWN;
+//                    fg = BROWN;
+                    bg = gameMap.getColorSet().bg;
+                    fg = gameMap.getColorSet().fg;
                 } else if (c == '=') {
                     bg = DARKER_GRAY;
                     fg = Color.DARK_GRAY;
@@ -315,16 +333,19 @@ public class Game {
                 }
 
                 // FOV colors
-                if (visible[gy][gx] == UNKNOWN) {
+                if (visible[gy][gx] == Constants.UNKNOWN) {
                     bg = Color.BLACK;
                     fg = Color.BLACK;
-                } else if (visible[gy][gx] == KNOWN) {
+                } else if (visible[gy][gx] == Constants.KNOWN) {
                     if (c == '#') {
                         bg = DARKER_GRAY;
-                        fg = Color.DARK_GRAY;
-                    } else {
+                        fg = Color.GRAY;
+                    } else if (c == '.'){
                         bg = Color.BLACK;
                         fg = Color.DARK_GRAY;
+                    }else {
+                        bg = Color.BLACK;
+                        fg = Color.GRAY;
                     }
                 }
                 drawChar(graphics2D, c, gx, gy, bg, fg);
@@ -488,71 +509,11 @@ public class Game {
         return (int) Math.sqrt((x2 - x1) * (x2 - x1)  + (y2 - y1) * (y2 - y1));
     }
 
-    /**
-     * Algorithm taken directly from: https://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#Java
-     * @param x1 The first x coordinate.
-     * @param y1 The first y coordinate.
-     * @param x2 The second x coordinate.
-     * @param y2 The second y coordinate.
-     * @return A list of positions representing a line plotted between the coordinates.
-     */
-    private List<Position2D> plotLine(int x1, int y1, int x2, int y2) {
-        List<Position2D> plot = new ArrayList<>();
-        // delta of exact value and rounded value of the dependent variable
-        int d = 0;
-
-        int dx = Math.abs(x2 - x1);
-        int dy = Math.abs(y2 - y1);
-
-        int dx2 = 2 * dx; // slope scaling factors to
-        int dy2 = 2 * dy; // avoid floating point
-
-        int ix = x1 < x2 ? 1 : -1; // increment direction
-        int iy = y1 < y2 ? 1 : -1;
-
-        int x = x1;
-        int y = y1;
-
-        if (dx >= dy) {
-            while (true) {
-                plot.add(new Position2D(x, y));
-                if (x == x2)
-                    break;
-                x += ix;
-                d += dy2;
-                if (d > dx) {
-                    y += iy;
-                    d -= dx2;
-                }
-            }
-        } else {
-            while (true) {
-                plot.add(new Position2D(x, y));
-                if (y == y2)
-                    break;
-                y += iy;
-                d += dx2;
-                if (d > dy) {
-                    x += ix;
-                    d -= dy2;
-                }
-            }
-        }
-        return plot;
-    }
-
-    public static final char UNKNOWN = '#';
-    public static final char KNOWN = '.';
-    public static final char VISIBLE = '!';
-
-    private char[][] visible;
-    private static final int FIELD_OF_VIEW_RANGE = 10;
-
     private void initVisible() {
         visible = new char[gridHeight][gridWidth];
         for (int x = 0; x < gridWidth; x++) {
             for (int y = 0; y < gridHeight; y++) {
-                visible[y][x] = UNKNOWN;
+                visible[y][x] = Constants.UNKNOWN;
             }
         }
     }
@@ -561,8 +522,8 @@ public class Game {
         // clear old lighting
         for (int x = 0; x < gridWidth; x++) {
             for (int y = 0; y < gridHeight; y++) {
-                if (visible[y][x] == VISIBLE) {
-                    visible[y][x] = KNOWN;
+                if (visible[y][x] == Constants.VISIBLE) {
+                    visible[y][x] = Constants.KNOWN;
                 }
             }
         }
@@ -572,16 +533,16 @@ public class Game {
             for (int y = center.y() - range; y < center.y() + range; y++) {
                 if (withinBounds(y, x)) {
                     if (distance(center.x(), center.y(), x, y) <= range) {
-                        List<Position2D> line = plotLine(center.x(), center.y(), x, y);
+                        List<Position2D> line = Bresenham.plotLine(center.x(), center.y(), x, y);
 
                         // the first position is always visible
                         Iterator<Position2D> it = line.iterator();
                         Position2D next = it.next();
-                        visible[next.y()][next.x()] = VISIBLE;
+                        visible[next.y()][next.x()] = Constants.VISIBLE;
 
                         while (it.hasNext()) {
                             next = it.next();
-                            visible[next.y()][next.x()] = VISIBLE;
+                            visible[next.y()][next.x()] = Constants.VISIBLE;
 
                             // check if a blocking character is encountered
                             char c = charGrid[next.y()][next.x()];
