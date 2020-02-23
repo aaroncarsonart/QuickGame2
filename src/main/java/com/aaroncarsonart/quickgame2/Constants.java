@@ -14,6 +14,8 @@ public class Constants {
     public static final char PATH = '.';
     public static final char WALL = '#';
     public static final char EMPTY = ' ';
+    public static final char UPSTAIRS = '<';
+    public static final char DOWNSTAIRS = '>';
 
 
 }

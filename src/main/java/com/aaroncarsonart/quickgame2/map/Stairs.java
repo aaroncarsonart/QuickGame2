@@ -4,7 +4,7 @@ import imbroglio.Position2D;
 
 public class Stairs {
     private Position2D pos;
-    private GameMap target;
+    private GameMap targetGameMap;
     private char sprite;
 
     public Stairs(Position2D pos, char sprite) {
@@ -20,11 +20,19 @@ public class Stairs {
         this.pos = pos;
     }
 
-    public GameMap getTarget() {
-        return target;
+    public GameMap getTargetGameMap() {
+        return targetGameMap;
     }
 
-    public void setTarget(GameMap target) {
-        this.target = target;
+    public void setTargetGameMap(GameMap targetGameMap) {
+        this.targetGameMap = targetGameMap;
+    }
+
+    public char getSprite() {
+        return sprite;
+    }
+
+    public void setSprite(char sprite) {
+        this.sprite = sprite;
     }
 }

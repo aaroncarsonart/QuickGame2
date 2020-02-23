@@ -3,12 +3,9 @@ package com.aaroncarsonart.quickgame2;
 import com.aaroncarsonart.quickgame2.hero.Hero;
 import com.aaroncarsonart.quickgame2.hero.HeroCreator;
 import com.aaroncarsonart.quickgame2.inventory.Inventory;
-import com.aaroncarsonart.quickgame2.map.DungeonGenerator;
 import com.aaroncarsonart.quickgame2.map.GameMap;
 import com.aaroncarsonart.quickgame2.map.GameMapCreator;
-import com.aaroncarsonart.quickgame2.menu.BasicVerticalMenuView;
 import com.aaroncarsonart.quickgame2.menu.Callback;
-import com.aaroncarsonart.quickgame2.menu.CenterMenuView;
 import com.aaroncarsonart.quickgame2.menu.ConsoleMenu;
 import com.aaroncarsonart.quickgame2.menu.ConsoleMenuView;
 import com.aaroncarsonart.quickgame2.menu.InventoryMenuView;
@@ -20,7 +17,6 @@ import com.aaroncarsonart.quickgame2.menu.StatusMenuView;
 import com.aaroncarsonart.quickgame2.menu.VerticalMenuView;
 import com.aaroncarsonart.quickgame2.util.Bresenham;
 import imbroglio.Direction;
-import imbroglio.Maze;
 import imbroglio.Position2D;
 
 import javax.swing.JFrame;
@@ -66,11 +62,14 @@ public class Game {
     private int gridWidth = 60;
     private int gridHeight = 40;
 
+    private int mapWidth = gridWidth;
+    private int mapHeight = gridHeight - 3;
+
     private int width = gridWidth * tileWidth;
     private int height = gridHeight * tileHeight;
 
     private char[][] charGrid;
-    private Position2D player;
+    private Position2D heroPos;
     private PlayerAction playerAction;
     private GameMode gameMode = GameMode.MAP;
 
@@ -83,8 +82,14 @@ public class Game {
     private ConsoleMenu renameMenu;
     private Stack<Menu> menuList;
 
+    private boolean shiftDown;
+    private boolean ctrlDown;
+    private boolean metaDown;
+
     private Hero hero = HeroCreator.createDefaultHero();
     private GameMap gameMap;
+    private Random rng = Constants.RNG;
+    private int turns;
 
     private char[][] visible;
 
@@ -125,15 +130,7 @@ public class Game {
         // init oldMenuList
         oldMenuList = new ArrayList<>();
 
-        initVisible();
         initCharGrid();
-
-//        List<Position2D> line = plotLine(0, 0, 5, 5);
-//        for (int i = 0; i < line.size(); i++){
-//            Position2D next = line.get(i);
-//            char c = Character.forDigit(i, 10);
-//            charGrid[next.y()][next.x()] = c;
-//        }
         initMenus();
     }
 
@@ -217,53 +214,21 @@ public class Game {
         return inventoryMenu;
     }
 
-    private void initCharGrid() {
-        gameMap = GameMapCreator.getGameMap(gridWidth, gridHeight);
+    private void setGameMap(GameMap gameMap) {
+        this.gameMap = gameMap;
         charGrid = gameMap.getCells();
         visible = gameMap.getVisible();
+    }
 
-        // ------------------------------------------------
-        // init charGrid
-        // ------------------------------------------------
-//        DungeonGenerator generator = new DungeonGenerator(gridWidth, gridHeight - 3);
-//        char[][] cells = generator.getCells();
-//        charGrid = new char[gridHeight][gridWidth];
-//        for (int x = 0; x < generator.getWidth(); x++) {
-//            for (int y = 0; y < generator.getHeight(); y++) {
-//                charGrid[y][x] = cells[y][x];
-//            }
-//        }
-
-//        Maze maze = Maze.generateRandomWalledMaze(gridWidth, gridHeight);
-//        Maze maze = Maze.generateCellularAutomataRoom(gridWidth, gridHeight - 3);
-//        for (int i = 0; i < 3; i++) {
-//            maze.cellularAutomataIteration();
-//            maze.connectDisconnectedComponents();
-//        }
-//        charGrid = new char[gridHeight][gridWidth];
-//        for (int x = 0; x < gridWidth; x++) {
-//            for (int y = 0; y < gridHeight; y++) {
-//                byte b = maze.getCell(x, y);
-//                char c;
-//                if (b == Maze.WALL) {
-//                    c = '#';
-//                } else if (b == Maze.PATH) {
-//                    c = '.';
-//                } else {
-//                    c = ' ';
-//                }
-//                charGrid[y][x] = c;
-//            }
-//        }
-
-
+    private void initCharGrid() {
+        setGameMap(GameMapCreator.createGameMap(mapWidth, mapHeight, 0));
 
         // ------------------------------------------------
         // Populate charGrid
         // ------------------------------------------------
         List<Position2D> openPaths = new ArrayList<>();
-        for (int y = 0; y < gridHeight; y++) {
-            for (int x = 0; x < gridWidth; x++) {
+        for (int y = 0; y < mapHeight; y++) {
+            for (int x = 0; x < mapWidth; x++) {
                 char c = charGrid[y][x];
                 if (c == '.') {
                     openPaths.add(new Position2D(x, y));
@@ -271,8 +236,8 @@ public class Game {
             }
         }
 
-        player = openPaths.remove(0);
-        fov(player, FIELD_OF_VIEW_RANGE);
+        heroPos = openPaths.remove(0);
+        fov(heroPos, FIELD_OF_VIEW_RANGE);
     }
 
     public void start() {
@@ -303,13 +268,13 @@ public class Game {
         }
     }
 
-    public void drawCharGrid(Graphics2D graphics2D) {
-        graphics2D.setColor(Color.BLACK);
-        graphics2D.fillRect(0, 0, width, height);
+    public void drawCharGrid(Graphics2D g) {
+        g.setColor(Color.BLACK);
+        g.fillRect(0, 0, width, height);
 
         // draw background
-        for (int gx = 0; gx < gridWidth; gx++) {
-            for (int gy = 0; gy < gridHeight; gy++) {
+        for (int gx = 0; gx < mapWidth; gx++) {
+            for (int gy = 0; gy < mapHeight; gy++) {
 
                 char c = charGrid[gy][gx];
                 Color bg, fg;
@@ -324,7 +289,7 @@ public class Game {
                 } else if (c == '.') {
                     bg = Color.BLACK;
                     fg = Color.LIGHT_GRAY;
-                } else if (c == '+') {
+                } else if (c == '+' || c == '>' || c == '<') {
                     bg = Color.BLACK;
                     fg = Color.YELLOW;
                 } else {
@@ -348,25 +313,75 @@ public class Game {
                         fg = Color.GRAY;
                     }
                 }
-                drawChar(graphics2D, c, gx, gy, bg, fg);
+
+                drawChar(g, c, gx, gy, bg, fg);
             }
         }
 
         // draw sprites
-        int px = player.x();
-        int py = player.y();
+        int px = heroPos.x();
+        int py = heroPos.y();
         Color pbg = Color.BLACK;
         Color pfg = Color.WHITE;
 
-        drawChar(graphics2D, '@', px, py, pbg, pfg);
+        drawChar(g, '@', px, py, pbg, pfg);
+
+        String turnsStr = "Turns: " + turns;
+        drawString(g, turnsStr, gridWidth - turnsStr.length(), gridHeight - 1, Color.BLACK, Color.WHITE);
+
     }
 
     public KeyListener createKeyListener() {
         KeyListener keyListener = new KeyListener() {
             public void keyTyped(KeyEvent e) {}
-            public void keyReleased(KeyEvent e) {}
+            public void keyReleased(KeyEvent e) {
+                switch (e.getKeyCode()) {
+                    case KeyEvent.VK_SHIFT:
+                        System.out.println("shift released");
+                        shiftDown = false;
+                        break;
+                    case KeyEvent.VK_CONTROL:
+                        System.out.println("control released");
+                        ctrlDown = false;
+                        break;
+                    case KeyEvent.VK_META:
+                        System.out.println("meta released");
+                        metaDown = false;
+                        break;
+                    default:
+                }
+            }
             public void keyPressed(KeyEvent e) {
                 switch (e.getKeyCode()) {
+                    case KeyEvent.VK_SHIFT:
+                        System.out.println("shift pressed");
+                        shiftDown = true;
+                        playerAction = PlayerAction.UNKNOWN;
+                        break;
+                    case KeyEvent.VK_CONTROL:
+                        System.out.println("control pressed");
+                        ctrlDown = true;
+                        playerAction = PlayerAction.UNKNOWN;
+                        break;
+                    case KeyEvent.VK_META:
+                        System.out.println("meta pressed");
+                        metaDown = true;
+                        playerAction = PlayerAction.UNKNOWN;
+                        break;
+                    case KeyEvent.VK_COMMA:
+                        playerAction = PlayerAction.UNKNOWN;
+                        if (metaDown) {
+                            upstairs();
+                            canvas.repaint();
+                        }
+                        break;
+                    case KeyEvent.VK_PERIOD:
+                        playerAction = PlayerAction.UNKNOWN;
+                        if (metaDown) {
+                            downstairs();
+                            canvas.repaint();
+                        }
+                        break;
                     case KeyEvent.VK_UP:
                     case KeyEvent.VK_K:
                         playerAction = PlayerAction.UP;
@@ -412,7 +427,9 @@ public class Game {
                         playerAction = PlayerAction.UNKNOWN;
                         break;
                 }
-                gameLoop();
+                if (playerAction != PlayerAction.UNKNOWN) {
+                    gameLoop();
+                }
             }
         };
         return keyListener;
@@ -440,6 +457,9 @@ public class Game {
                         menuList.push(mainMenu);
                         updated = true;
                         break;
+                    case OK:
+                        updated = okAction();
+                        break;
                     case STATUS_MENU:
                         gameMode = GameMode.MENU;
                         menuList.push(statusMenu);
@@ -460,49 +480,88 @@ public class Game {
                 }
             }
             break;
-            // --------------------------------------------
-            case MENU: {
-            // --------------------------------------------
+            case MENU:
                 menuList.peek().updateMenu(playerAction);
                 updated = true;
-//                switch(playerAction) {
-//                    case UP:
-//                    case DOWN:
-//                    case LEFT:
-//                    case RIGHT:
-//                        updated = moveMenu(playerAction);
-//                        break;
-//                    case CANCEL:
-//                        gameMode = GameMode.MAP;
-//                        updated = true;
-//                        break;
-//                    case QUIT:
-//                        System.exit(0);
-//                }
-            }
             break;
         }
         if (updated) {
+            tick();
             canvas.repaint();
         }
     }
 
     private boolean moveMap(PlayerAction playerAction) {
         boolean updated = false;
-        Position2D next = player.moveTowards(getDirection(playerAction));
-        boolean passable = false;
-        if (withinBounds(next.y(), next.x())) {
-            char c = charGrid[next.y()][next.x()];
-            passable = ".+".indexOf(c) != -1;
-        }
-        if (passable) {
-            player = next;
-            fov(player, FIELD_OF_VIEW_RANGE);
-            hero.setEnergy(hero.getEnergy() - 0.05);
-            updated = true;
-        }
-        System.out.println("PlayerPos: " + player);
+        boolean keepMoving = shiftDown;
+        do {
+            Position2D next = heroPos.moveTowards(getDirection(playerAction));
+
+            boolean passable = false;
+            boolean withinBounds = withinBounds(next.y(), next.x());
+            if (withinBounds) {
+                char c = charGrid[next.y()][next.x()];
+                passable = ".+<>".indexOf(c) != -1;
+            }
+            if (withinBounds && (passable || metaDown)) {
+                heroPos = next;
+                fov(heroPos, FIELD_OF_VIEW_RANGE);
+                hero.setEnergy(hero.getEnergy() - 0.05);
+                updated = true;
+            }
+
+            if (keepMoving) {
+                keepMoving = passable;
+            }
+            if (keepMoving) {
+                // check if neighboring squares are of interest
+                List<Position2D> cardinalPositionsToCheck = heroPos.getNeighbors();
+                cardinalPositionsToCheck.add(heroPos);
+                Iterator<Position2D> it = cardinalPositionsToCheck.iterator();
+                while (it.hasNext()) {
+                    Position2D pos = it.next();
+                    char c = charGrid[pos.y()][pos.x()];
+                    if ("+".indexOf(c) != -1) {
+                        keepMoving = false;
+                        break;
+                    } else if (c != '#') {
+                        it.remove();
+                    }
+                }
+
+//                // TODO clean up the auto-run code
+//
+//                List<Position2D> cornerPositions = new ArrayList<>();
+//                cornerPositions.add(heroPos.above().left());
+//                cornerPositions.add(heroPos.above().right());
+//                cornerPositions.add(heroPos.below().left());
+//                cornerPositions.add(heroPos.below().right());
+//                it = cornerPositions.iterator();
+//                while (it.hasNext()) {
+//                    Position2D pos = it.next();
+//                    char c = charGrid[pos.y()][pos.x()];
+//                    if (c != '#') {
+//                        it.remove();
+//                    }
+//                }
+//
+                if (cardinalPositionsToCheck.size() > 2
+//                        && cornerPositions.size() != 0
+                ) {
+                    keepMoving = false;
+                }
+            }
+            if (keepMoving) {
+                tick();
+//                canvas.repaint();
+//                try {
+//                    Thread.sleep(100);
+//                } catch (InterruptedException e) {
+//                }
+            }
+        } while (keepMoving);
         return updated;
+
     }
 
     public int distance(int x1, int y1, int x2, int y2) {
@@ -510,9 +569,9 @@ public class Game {
     }
 
     private void initVisible() {
-        visible = new char[gridHeight][gridWidth];
-        for (int x = 0; x < gridWidth; x++) {
-            for (int y = 0; y < gridHeight; y++) {
+        visible = new char[mapHeight][mapWidth];
+        for (int x = 0; x < mapWidth; x++) {
+            for (int y = 0; y < mapHeight; y++) {
                 visible[y][x] = Constants.UNKNOWN;
             }
         }
@@ -520,8 +579,8 @@ public class Game {
 
     private void fov(Position2D center, int range) {
         // clear old lighting
-        for (int x = 0; x < gridWidth; x++) {
-            for (int y = 0; y < gridHeight; y++) {
+        for (int x = 0; x < mapWidth; x++) {
+            for (int y = 0; y < mapHeight; y++) {
                 if (visible[y][x] == Constants.VISIBLE) {
                     visible[y][x] = Constants.KNOWN;
                 }
@@ -556,8 +615,53 @@ public class Game {
         }
     }
 
+    private void upstairs() {
+        GameMap nextMap = gameMap.getUpstairs().getTargetGameMap();
+        setGameMap(nextMap);
+        heroPos = gameMap.getDownstairs().getPos();
+        fov(heroPos, FIELD_OF_VIEW_RANGE);
+    }
+
+    private void downstairs() {
+        if (gameMap.getDownstairs().getTargetGameMap() == null) {
+            int depth = gameMap.getDepth() + 1;
+            GameMap nextMap = GameMapCreator.createGameMap(mapWidth, mapHeight, depth);
+            nextMap.getUpstairs().setTargetGameMap(gameMap);
+            gameMap.getDownstairs().setTargetGameMap(nextMap);
+        }
+        setGameMap(gameMap.getDownstairs().getTargetGameMap());
+        heroPos = gameMap.getUpstairs().getPos();
+        fov(heroPos, FIELD_OF_VIEW_RANGE);
+    }
+
+
+    private boolean okAction() {
+        boolean updated = false;
+        char c = gameMap.getCell(heroPos);
+
+        // ------------------------------------------------
+        // handle stairs
+        // ------------------------------------------------
+        if (c == Constants.UPSTAIRS) {
+            upstairs();
+            updated = true;
+        } else if (c == Constants.DOWNSTAIRS) {
+            downstairs();
+            updated = true;
+        }
+
+        return updated;
+    }
+
+    /**
+     * Update all non-heroPos entities here.
+     */
+    private void tick() {
+        turns++;
+    }
+
     private boolean withinBounds(int y, int x) {
-        return 0 <= x && x < gridWidth && 0 <= y && y < gridHeight;
+        return 0 <= x && x < mapWidth && 0 <= y && y < mapHeight;
     }
 
     private Direction getDirection(PlayerAction action) {

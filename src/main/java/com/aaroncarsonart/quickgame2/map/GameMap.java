@@ -5,6 +5,8 @@ import com.aaroncarsonart.quickgame2.inventory.Item;
 import com.aaroncarsonart.quickgame2.monster.Monster;
 import imbroglio.Position2D;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class GameMap {
@@ -13,6 +15,8 @@ public class GameMap {
     private int height;
     private char[][] cells;
     private char[][] visible;
+
+    private int depth;
 
     private Stairs downstairs;
     private Stairs upstairs;
@@ -137,5 +141,26 @@ public class GameMap {
 
     public void setColorSet(ColorSet colorSet) {
         this.colorSet = colorSet;
+    }
+
+    public int getDepth() {
+        return depth;
+    }
+
+    public void setDepth(int depth) {
+        this.depth = depth;
+    }
+
+    public List<Position2D> getEmptyPositions() {
+        List<Position2D> emptyPositions = new ArrayList<>();
+        for (int x = 0; x < width; x++){
+            for (int y = 0; y < height; y++) {
+                char c = cells[y][x];
+                if (c == '.') {
+                    emptyPositions.add(new Position2D(x, y));
+                }
+            }
+        }
+        return emptyPositions;
     }
 }
