@@ -309,7 +309,7 @@ public class Hero {
     }
 
     public int getAttack() {
-        int base = strength / 2;
+        int base = strength;
         int modifiers = statModifiers.get(Stat.ATTACK).stream()
                 .mapToInt(StatModifier::getModifier)
                 .sum();
@@ -317,7 +317,7 @@ public class Hero {
     }
 
     public int getDefense() {
-        int base = stamina / 2;
+        int base = stamina;
         int modifiers = statModifiers.get(Stat.DEFENSE).stream()
                 .mapToInt(StatModifier::getModifier)
                 .sum();
@@ -325,7 +325,7 @@ public class Hero {
     }
 
     public int getAccuracy() {
-        int base = strength / 4 + agility / 4;
+        int base = strength / 2 + agility / 2;
         int modifiers = statModifiers.get(Stat.ACCURACY).stream()
                 .mapToInt(StatModifier::getModifier)
                 .sum();
@@ -333,7 +333,7 @@ public class Hero {
     }
 
     public int getEvade() {
-        int base = agility / 2;
+        int base = agility;
         int modifiers = statModifiers.get(Stat.EVADE).stream()
                 .mapToInt(StatModifier::getModifier)
                 .sum();

@@ -30,7 +30,14 @@ public class HeroCreator {
         hero.setEnergy(energy);
         hero.setMaxEnergy(energy);
 
-        int statPoints = 6 * 10;
+        hero.setStrength(1);
+        hero.setStamina(1);
+        hero.setAgility(1);
+        hero.setIntelligence(1);
+        hero.setWisdom(1);
+        hero.setCharisma(1);
+
+        int statPoints = 9;
         for (int i = 0; i < statPoints; i++) {
             int next = Constants.RNG.nextInt(6);
             if (next == 0) {

@@ -15,6 +15,8 @@ import com.aaroncarsonart.quickgame2.menu.MenuLayout;
 import com.aaroncarsonart.quickgame2.menu.MenuView;
 import com.aaroncarsonart.quickgame2.menu.StatusMenuView;
 import com.aaroncarsonart.quickgame2.menu.VerticalMenuView;
+import com.aaroncarsonart.quickgame2.status.ColoredString;
+import com.aaroncarsonart.quickgame2.status.LogMessage;
 import com.aaroncarsonart.quickgame2.util.Bresenham;
 import imbroglio.Direction;
 import imbroglio.Position2D;
@@ -82,6 +84,9 @@ public class Game {
     private ConsoleMenu renameMenu;
     private Stack<Menu> menuList;
 
+    private int messageLogMaxSize = 100;
+    private List<LogMessage> messageLog = new ArrayList<>();
+
     private boolean shiftDown;
     private boolean ctrlDown;
     private boolean metaDown;
@@ -108,6 +113,7 @@ public class Game {
                     RenderingHints.KEY_TEXT_ANTIALIASING,
                     RenderingHints.VALUE_TEXT_ANTIALIAS_ON));
             drawCharGrid(graphics2D);
+            drawHud(graphics2D);
             if (gameMode == GameMode.MENU) {
                 //drawMenus(graphics2D);
                 Menu menu = menuList.peek();
@@ -325,10 +331,97 @@ public class Game {
         Color pfg = Color.WHITE;
 
         drawChar(g, '@', px, py, pbg, pfg);
+    }
 
-        String turnsStr = "Turns: " + turns;
-        drawString(g, turnsStr, gridWidth - turnsStr.length(), gridHeight - 1, Color.BLACK, Color.WHITE);
+    private void drawHud(Graphics2D g) {
+        Color bg = Color.BLACK;
+        Color fg = Color.WHITE;
+        Color vbg = Color.BLACK;
+        Color vfg = Color.YELLOW;
 
+        int cx = 0;
+        int cy = gridHeight - 3;
+
+        String statLabel, statValue;
+
+        statLabel = "HP: ";
+        drawString(g, statLabel, cx, cy, bg, fg);
+        cx += statLabel.length();
+        statValue = String.valueOf(hero.getHealth());
+        drawString(g, statValue, cx, cy, vbg, Color.GREEN);
+        cx += statValue.length();
+
+        statLabel = "/";
+        drawString(g, statLabel, cx, cy, bg, fg);
+        cx += statLabel.length();
+        statValue = String.valueOf(hero.getModifiedMaxHealth());
+        drawString(g, statValue, cx, cy, vbg, Color.GREEN);
+        cx = 0;
+        cy += 1;
+
+        statLabel = "MP: ";
+        drawString(g, statLabel, cx, cy, bg, fg);
+        cx += statLabel.length();
+        statValue = String.valueOf(hero.getMana());
+        drawString(g, statValue, cx, cy, vbg, Color.RED);
+        cx += statValue.length();
+
+        statLabel = "/";
+        drawString(g, statLabel, cx, cy, bg, fg);
+        cx += statLabel.length();
+        statValue = String.valueOf(hero.getModifiedMaxMana());
+        drawString(g, statValue, cx, cy, vbg, Color.RED);
+        cx = 0;
+        cy += 1;
+
+        statLabel = "EP: ";
+        drawString(g, statLabel, cx, cy, bg, fg);
+        cx += statLabel.length();
+        statValue = String.valueOf(Double.valueOf(hero.getEnergy()).intValue());
+        drawString(g, statValue, cx, cy, vbg, Color.CYAN);
+        cx += statValue.length();
+
+        statLabel = "/";
+        drawString(g, statLabel, cx, cy, bg, fg);
+        cx += statLabel.length();
+        statValue = String.valueOf(hero.getModifiedMaxEnergy());
+        drawString(g, statValue, cx, cy, vbg, Color.CYAN);
+        cx = 0;
+        cy += 1;
+
+        statValue = String.valueOf(gameMap.getDepth() + 1);
+        cx = gridWidth - statValue.length();
+        cy = gridHeight - 2;
+        drawString(g, statValue, cx, cy, vbg, vfg);
+        statLabel = "Depth: ";
+        cx -= statLabel.length();
+        drawString(g, statLabel, cx, cy, bg, fg);
+
+
+        statValue = String.valueOf(turns);
+        cx = gridWidth - statValue.length();
+        cy = gridHeight - 1;
+        drawString(g, statValue, cx, cy, vbg, vfg);
+        statLabel = "Turns: ";
+        cx -= statLabel.length();
+        drawString(g, statLabel, cx, cy, bg, fg);
+
+
+        // draw last 3 status messages
+        int xStatusOffset = 12;
+        int limit = Math.min(messageLog.size(), 3);
+        cx = xStatusOffset;
+        cy = gridHeight - 1;
+        for (int i = 0; i < limit; i++) {
+            LogMessage logMessage = messageLog.get(messageLog.size() - 1 - i);
+            for (ColoredString cStr : logMessage.getMessage()) {
+                drawString(g, cStr.getMessage(), cx, cy, bg, cStr.getColor());
+                cx += cStr.getMessage().length();
+            }
+
+            cx = xStatusOffset;
+            cy -= 1;
+        }
     }
 
     public KeyListener createKeyListener() {
@@ -508,6 +601,9 @@ public class Game {
                 fov(heroPos, FIELD_OF_VIEW_RANGE);
                 hero.setEnergy(hero.getEnergy() - 0.05);
                 updated = true;
+            } else {
+                messageLog.add(new LogMessage("You bumped into a wall."));
+                updated = true;
             }
 
             if (keepMoving) {
@@ -644,8 +740,10 @@ public class Game {
         // ------------------------------------------------
         if (c == Constants.UPSTAIRS) {
             upstairs();
+            messageLog.add(new LogMessage("You ascend the stairs."));
             updated = true;
         } else if (c == Constants.DOWNSTAIRS) {
+            messageLog.add(new LogMessage("You descend the stairs."));
             downstairs();
             updated = true;
         }
@@ -658,6 +756,14 @@ public class Game {
      */
     private void tick() {
         turns++;
+        char c = charGrid[heroPos.y()][heroPos.x()];
+        if (c == '<') {
+            messageLog.add(new LogMessage("Stairs are leading up."));
+        } else if (c == '>') {
+            messageLog.add(new LogMessage("Stairs are leading down."));
+        } else if (c == '+') {
+            messageLog.add(new LogMessage("You're standing in a doorway."));
+        }
     }
 
     private boolean withinBounds(int y, int x) {

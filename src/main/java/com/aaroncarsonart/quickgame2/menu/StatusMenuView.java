@@ -68,7 +68,7 @@ public class StatusMenuView extends MenuView {
 //        cy ++;
 
         int column2Off = 8;
-        int column3Off = 16;
+        int column3Off = 17;
 
         statLabel = "Lv: ";
         game.drawString(g, statLabel, cx, cy, bg, fg);
@@ -200,7 +200,7 @@ public class StatusMenuView extends MenuView {
         cx = menuOrigin.x();
         cy += 1;
 
-        statLabel = "Rng: ";
+        statLabel = "Acc: ";
         game.drawString(g, statLabel, cx, cy, bg, fg);
         cx += statLabel.length();
         statValue = String.valueOf(hero.getAccuracy());
@@ -223,6 +223,7 @@ public class StatusMenuView extends MenuView {
         statValue = String.valueOf(hero.getHealth());
         game.drawString(g, statValue, cx, cy, vbg, vfg);
         cx += statValue.length();
+
         statLabel = "/";
         game.drawString(g, statLabel, cx, cy, bg, fg);
         cx += statLabel.length();
@@ -237,6 +238,7 @@ public class StatusMenuView extends MenuView {
         statValue = String.valueOf(hero.getMana());
         game.drawString(g, statValue, cx, cy, vbg, vfg);
         cx += statValue.length();
+
         statLabel = "/";
         game.drawString(g, statLabel, cx, cy, bg, fg);
         cx += statLabel.length();
@@ -251,6 +253,7 @@ public class StatusMenuView extends MenuView {
         statValue = String.valueOf(Double.valueOf(hero.getEnergy()).intValue());
         game.drawString(g, statValue, cx, cy, vbg, vfg);
         cx += statValue.length();
+
         statLabel = "/";
         game.drawString(g, statLabel, cx, cy, bg, fg);
         cx += statLabel.length();
