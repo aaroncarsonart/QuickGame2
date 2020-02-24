@@ -6,6 +6,7 @@ import com.aaroncarsonart.quickgame2.monster.Monster;
 import imbroglio.Position2D;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,8 +22,11 @@ public class GameMap {
     private Stairs downstairs;
     private Stairs upstairs;
 
+    private List<Room> rooms;
+    private MapType mapType;
+
     private Map<Position2D, Item> items;
-    private Map<Position2D, Monster> monsters;
+    private Map<Position2D, Monster> monsterMap;
 
     private ColorSet colorSet;
 
@@ -37,6 +41,8 @@ public class GameMap {
                 visible[y][x] = Constants.UNKNOWN;
             }
         }
+        this.items = new HashMap<>();
+        this.monsterMap = new HashMap<>();
     }
 
     public char getCell(int y, int x) {
@@ -127,12 +133,12 @@ public class GameMap {
         this.items = items;
     }
 
-    public Map<Position2D, Monster> getMonsters() {
-        return monsters;
+    public Map<Position2D, Monster> getMonsterMap() {
+        return monsterMap;
     }
 
-    public void setMonsters(Map<Position2D, Monster> monsters) {
-        this.monsters = monsters;
+    public void setMonsterMap(Map<Position2D, Monster> monsterMap) {
+        this.monsterMap = monsterMap;
     }
 
     public ColorSet getColorSet() {
@@ -151,6 +157,22 @@ public class GameMap {
         this.depth = depth;
     }
 
+    public List<Room> getRooms() {
+        return rooms;
+    }
+
+    public void setRooms(List<Room> rooms) {
+        this.rooms = rooms;
+    }
+
+    public MapType getMapType() {
+        return mapType;
+    }
+
+    public void setMapType(MapType mapType) {
+        this.mapType = mapType;
+    }
+
     public List<Position2D> getEmptyPositions() {
         List<Position2D> emptyPositions = new ArrayList<>();
         for (int x = 0; x < width; x++){
@@ -163,4 +185,5 @@ public class GameMap {
         }
         return emptyPositions;
     }
+
 }

@@ -1,13 +1,16 @@
 package com.aaroncarsonart.quickgame2.map;
 
 import com.aaroncarsonart.quickgame2.Constants;
-import com.aaroncarsonart.quickgame2.util.Rng;
+import com.aaroncarsonart.quickgame2.monster.Monster;
+import com.aaroncarsonart.quickgame2.monster.MonsterCreator;
 import imbroglio.Difficulty;
 import imbroglio.Maze;
 import imbroglio.Position2D;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 public class GameMapCreator {
 
@@ -38,47 +41,89 @@ public class GameMapCreator {
         gameMap.setDepth(depth);
 
         // determine map type and color
-        if (0 <= depth && depth < 3) {
+        if (1 <= depth && depth < 4) {
             generateMapType(gameMap, MapType.DUNGEON);
             gameMap.setColorSet(ColorSet.BROWN);
-        } else if (3 <= depth && depth < 6) {
+        } else if (4 <= depth && depth < 7) {
             generateMapType(gameMap, MapType.CAVES);
             gameMap.setColorSet(ColorSet.PURPLE);
-        } else if (6 <= depth && depth < 9) {
+        } else if (7 <= depth && depth < 10) {
             generateMapType(gameMap, MapType.DOUBLE_MAZE);
             gameMap.setColorSet(ColorSet.BLUE);
-        } else if (depth == 9) {
+        } else if (depth == 10) {
             generateMapType(gameMap, MapType.MAZE);
             gameMap.setColorSet(ColorSet.RED);
-        } else if (10 <= depth && depth < 13) {
+        } else if (11 <= depth && depth < 14) {
             generateMapType(gameMap, MapType.DUNGEON);
             gameMap.setColorSet(ColorSet.YELLOW);
-        } else if (13 <= depth && depth < 16) {
+        } else if (14 <= depth && depth < 17) {
             generateMapType(gameMap, MapType.CAVES);
             gameMap.setColorSet(ColorSet.GREEN);
-        } else if (16 <= depth && depth < 19) {
+        } else if (17 <= depth && depth < 20) {
             generateMapType(gameMap, MapType.DOUBLE_MAZE);
             gameMap.setColorSet(ColorSet.BROWN);
-        } else if (depth == 19) {
+        } else if (depth == 20) {
             generateMapType(gameMap, MapType.MAZE);
-            gameMap.setColorSet(ColorSet.RED);
+            gameMap.setColorSet(ColorSet.PURPLE);
         }
 
         // populate stairs, items, monsters
         List<Position2D> emptyPositions = gameMap.getEmptyPositions();
-        if (depth != 0) {
+        if (depth != 1) {
             Position2D upPos = emptyPositions.remove(rng.nextInt(emptyPositions.size()));
             Stairs upstairs = new Stairs(upPos, Constants.UPSTAIRS);
             gameMap.setUpstairs(upstairs);
             gameMap.setCell(upPos, upstairs.getSprite());
         }
-        if (depth != 19) {
+        if (depth != 20) {
             Position2D downPos = emptyPositions.remove(rng.nextInt(emptyPositions.size()));
             Stairs downstairs = new Stairs(downPos, Constants.DOWNSTAIRS);
             gameMap.setDownstairs(downstairs);
             gameMap.setCell(downPos, downstairs.getSprite());
         }
 
+        // ------------------------------------------------
+        // Add monsters
+        // ------------------------------------------------
+
+        List<Monster> validMonsters = MonsterCreator.MONSTER_LIST.stream()
+                .filter(m -> m.getMinDepth() <= depth && depth <= m.getMaxDepth())
+                .collect(Collectors.toList());
+        int monsterGroupsToAdd = 20;
+
+        // special handling for dungeons to ensure monsters in rooms;
+        if (gameMap.getMapType() == MapType.DUNGEON) {
+            monsterGroupsToAdd = 10;
+            List<Position2D> candidatePositions = getCandidateRoomPositions(gameMap, 3);
+            while (!candidatePositions.isEmpty() && !validMonsters.isEmpty()) {
+                Monster next = validMonsters.get(rng.nextInt(validMonsters.size()));
+                int encounter = next.getMinEncounter();
+                if (next.getMinEncounter() != next.getMaxEncounter()) {
+                    encounter += rng.nextInt(next.getMaxEncounter() - next.getMinEncounter());
+                }
+                for (int j = 0; j < encounter && !candidatePositions.isEmpty(); j++) {
+                    Monster monster = next.copy();
+                    Position2D pos = candidatePositions.remove(rng.nextInt(candidatePositions.size()));
+                    monster.setPos(pos);
+                    gameMap.getMonsterMap().put(pos, monster);
+                }
+            }
+        }
+
+        // other maps handling (plus some handling for dungeons)
+        for (int i = 0; i < monsterGroupsToAdd && !validMonsters.isEmpty(); i++) {
+            Monster next = validMonsters.get(rng.nextInt(validMonsters.size()));
+            int encounter = next.getMinEncounter();
+            if (next.getMinEncounter() != next.getMaxEncounter()) {
+                encounter += rng.nextInt(next.getMaxEncounter() - next.getMinEncounter());
+            }
+            for (int j = 0; j < encounter; j++) {
+                Monster monster = next.copy();
+                Position2D pos = emptyPositions.remove(rng.nextInt(emptyPositions.size()));
+                monster.setPos(pos);
+                gameMap.getMonsterMap().put(pos, monster);
+            }
+        }
         return gameMap;
     }
 
@@ -87,6 +132,7 @@ public class GameMapCreator {
         int width = gameMap.getWidth();
         int height = gameMap.getHeight();
         ColorSet colorSet = ColorSet.RED;
+        gameMap.setMapType(mapType);
         switch (mapType) {
             case DUNGEON: {
                 colorSet = ColorSet.BROWN;
@@ -98,6 +144,7 @@ public class GameMapCreator {
                         gameMap.setCell(y, x, cells[y][x]);
                     }
                 }
+                gameMap.setRooms(generator.getRooms());
                 break;
             }
             case CAVES: {
@@ -175,6 +222,27 @@ public class GameMapCreator {
                 gameMap.setCell(y, x, c);
             }
         }
+    }
+
+    public static List<Position2D> getCandidateRoomPositions(GameMap gameMap, int maxPositionsPerRoom) {
+        List<Position2D> emptyPositions = new ArrayList<>();
+        for (Room room : gameMap.getRooms()) {
+            List<Position2D> roomPositions = new ArrayList<>();
+            for (int x = room.getOrigin().x(); x < room.getOrigin().x() + room.getWidth(); x++){
+                for (int y = room.getOrigin().y(); y < room.getOrigin().y() + room.getHeight(); y++) {
+                    char c = gameMap.getCell(y, x);
+                    if (c == '.') {
+                        roomPositions.add(new Position2D(x, y));
+                    }
+                }
+            }
+            int positionsToGet = 1 + rng.nextInt(Math.min(maxPositionsPerRoom - 1, room.getHeight()));
+            for (int i = 0; i < positionsToGet; i++) {
+                Position2D next = roomPositions.get(rng.nextInt(roomPositions.size()));
+                emptyPositions.add(next);
+            }
+        }
+        return emptyPositions;
     }
 
 }

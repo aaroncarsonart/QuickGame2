@@ -16,6 +16,7 @@ import java.util.Scanner;
 public class ItemCreator {
 
     private static int itemId = 0;
+    private static Map<String, Item> items = new HashMap<>();
 
     public static List<Item> createTestInventory() {
         List<Item> inventory = new ArrayList<>();

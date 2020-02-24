@@ -32,7 +32,7 @@ public class Item implements Comparable<Item> {
     public boolean equals(Object obj) {
         if (obj instanceof Item) {
             Item item = (Item) obj;
-            return this.id == item.id;
+            return this.name.equals(item.name);
         }
         return false;
     }

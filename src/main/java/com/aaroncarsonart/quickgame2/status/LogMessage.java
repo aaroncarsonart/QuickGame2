@@ -29,6 +29,14 @@ public class LogMessage {
         this.message = message;
     }
 
+    public void append(String string) {
+        message.add(new ColoredString(string, Color.WHITE));
+    }
+
+    public void append(String string, Color color) {
+        message.add(new ColoredString(string, color));
+    }
+
     public void append(ColoredString coloredString) {
         message.add(coloredString);
     }

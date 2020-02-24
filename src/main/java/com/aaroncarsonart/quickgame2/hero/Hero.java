@@ -1,13 +1,14 @@
 package com.aaroncarsonart.quickgame2.hero;
 
 import com.aaroncarsonart.quickgame2.inventory.Inventory;
+import com.aaroncarsonart.quickgame2.monster.Battler;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Hero {
+public class Hero implements Battler {
 
     private String name;
 

@@ -26,11 +26,13 @@ public class DungeonGenerator {
     private char[][] cells;
     private static Random rng = new Random(1); // Constants.RNG;
 
+    private List<Room> rooms;
+
     public DungeonGenerator(int width, int height) {
         this.width = width;
         this.height = height;
         this.cells = new char[height][width];
-        List<Room> rooms = generateRoomedDungeon();
+        rooms = generateRoomedDungeon();
         for (Room room : rooms) {
             for (Position2D door : room.getDoors()) {
                 cells[door.y()][door.x()] = '.';
@@ -691,5 +693,9 @@ public class DungeonGenerator {
 
 
         System.out.println(dungeonGenerator);
+    }
+
+    public List<Room> getRooms() {
+        return rooms;
     }
 }
