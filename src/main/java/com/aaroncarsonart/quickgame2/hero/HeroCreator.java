@@ -18,7 +18,10 @@ public class HeroCreator {
         hero.setLevel(1);
         hero.setExp(0);
 
-        int health = 10 + Constants.RNG.nextInt(10);
+        int health = 0;
+        for (int i = 0; i < 5; i++) {
+            health += 1 + Constants.RNG.nextInt(10);
+        }
         hero.setHealth(health);
         hero.setMaxHealth(health);
 

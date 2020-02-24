@@ -18,9 +18,9 @@ public interface Battler {
 
     default int attack(Battler target) {
         int toHit = this.getAccuracy() + rng.nextInt(5);
-        int evade = target.getEvade() / 2;
+        int evade = target.getEvade();
         if (toHit > evade) {
-            int damage = Math.max(1, this.getAttack() + rng.nextInt(this.getAttack()) - target.getDefense() / 2);
+            int damage = Math.max(1, this.getAttack() * 2 + rng.nextInt(this.getAttack()) - target.getDefense());
             int newHealth = Math.max(0, target.getHealth() - damage);
             target.setHealth(newHealth);
             return damage;

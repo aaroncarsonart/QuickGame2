@@ -6,6 +6,7 @@ import com.aaroncarsonart.quickgame2.inventory.Inventory;
 import com.aaroncarsonart.quickgame2.map.GameMap;
 import com.aaroncarsonart.quickgame2.map.GameMapCreator;
 import com.aaroncarsonart.quickgame2.menu.Callback;
+import com.aaroncarsonart.quickgame2.menu.CenterMenuView;
 import com.aaroncarsonart.quickgame2.menu.ConsoleMenu;
 import com.aaroncarsonart.quickgame2.menu.ConsoleMenuView;
 import com.aaroncarsonart.quickgame2.menu.InventoryMenuView;
@@ -110,6 +111,10 @@ public class Game {
     private static final int FIELD_OF_VIEW_RANGE = 10;
     private static final Random RANDOM = Constants.RNG;
 
+    boolean victory = false;
+    boolean gameOver = false;
+    String gameOverMessage = null;
+
     /**
      * A custom Component for drawing the game graphics to the screen.
      */
@@ -121,15 +126,28 @@ public class Game {
             graphics2D.setRenderingHints(new RenderingHints(
                     RenderingHints.KEY_TEXT_ANTIALIASING,
                     RenderingHints.VALUE_TEXT_ANTIALIAS_ON));
+
             drawCharGrid(graphics2D);
             drawHud(graphics2D);
+
             if (gameMode == GameMode.MENU) {
                 //drawMenus(graphics2D);
                 Menu menu = menuList.peek();
                 menu.getMenuView().render(graphics2D, menu);
             }
+
+            if (gameOver) {
+                drawGameOverScreen(graphics2D);
+                frame.removeKeyListener(keyListener);
+            }
+            if (victory) {
+                drawVictoryScreen(graphics2D);
+                frame.removeKeyListener(keyListener);
+            }
         }
     }
+
+    private KeyListener keyListener;
 
     /**
      * Initialize the key game components.
@@ -140,7 +158,8 @@ public class Game {
         canvas.setPreferredSize(new Dimension(width, height));
         frame.add(canvas, BorderLayout.CENTER);
         frame.pack();
-        frame.addKeyListener(createKeyListener());
+        keyListener = createKeyListener();
+        frame.addKeyListener(keyListener);
 
         // init oldMenuList
         oldMenuList = new ArrayList<>();
@@ -636,7 +655,6 @@ public class Game {
             if (withinBounds && (passable || metaDown)) {
                 heroPos = next;
                 fov(heroPos, FIELD_OF_VIEW_RANGE);
-                hero.setEnergy(hero.getEnergy() - 0.05);
                 updated = true;
             } else if (occupiedByMonster) {
                 fightMonster(next);
@@ -837,7 +855,14 @@ public class Game {
 //        else if (heroTile == '+') {
 //            messageLog.add(new LogMessage("You're standing in a doorway."));
 //        }
+        updateHero();
         updateMonsters();
+        checkForGameOver();
+        checkForVictory();
+    }
+
+    private void updateHero() {
+        hero.setEnergy(hero.getEnergy() - (0.05 - 0.001 * hero.getStamina()));
     }
 
     private void updateMonsters() {
@@ -1091,6 +1116,84 @@ public class Game {
             return newPos;
         }
         return null;
+    }
+
+    private void checkForGameOver() {
+        if (hero.getHealth() < 1) {
+            gameOver = true;
+            gameOverMessage = hero.getName() + " was slain.";
+        } else if (hero.getEnergy() < 1) {
+            gameOver = true;
+            gameOverMessage = hero.getName() + " ran out of energy.";
+        }
+    }
+
+    private void drawGameOverScreen(Graphics2D g) {
+        Color bg = Color.BLACK;
+        Color fg = Color.WHITE;
+
+        int px = gridWidth / 2 - gameOverMessage.length() / 2;
+        int py = gridHeight / 2 - 2;
+        int pw = gameOverMessage.length();
+        int ph = 3;
+
+        Position2D origin = new Position2D(px, py);
+
+        // just use a menuView for drawing borders
+        MenuView menuView = new CenterMenuView(this);
+        menuView.drawMenuBorders(g, origin, pw, ph);
+
+        for (int x = px; x < pw; x++) {
+            for (int y = py; y < ph; y++) {
+                drawChar(g, ' ', x, y, bg, fg);
+            }
+        }
+        drawString(g, gameOverMessage, px, py + 2, bg, fg);
+        String gameOver = "GAME OVER";
+        px = gridWidth / 2 - gameOver.length() / 2 - 1;
+        drawString(g, gameOver,px, py, bg, Color.RED);
+    }
+
+    private void checkForVictory() {
+
+    }
+
+    private void drawVictoryScreen(Graphics2D g) {
+        String victoryMessage = hero.getName() + " has successfully plundered";
+        String victoryMessage2 = "the depths of Capricious Caverns";
+        String victoryMessage3 = "and collected the 5 Orbs of Destiny.";
+
+        Color bg = Color.BLACK;
+        Color fg = Color.WHITE;
+
+        int pw = Math.max(victoryMessage.length(), victoryMessage3.length());
+        int ph = 5;
+        int px = gridWidth / 2 - pw / 2;
+        int py = gridHeight / 2 - 3;
+
+        Position2D origin = new Position2D(px, py);
+
+        // just use a menuView for drawing borders
+        MenuView menuView = new CenterMenuView(this);
+        menuView.drawMenuBorders(g, origin, pw, ph);
+
+        for (int x = px; x < pw; x++) {
+            for (int y = py; y < ph; y++) {
+                drawChar(g, ' ', x, y, bg, fg);
+            }
+        }
+        px = gridWidth / 2 - victoryMessage.length() / 2;
+        drawString(g, victoryMessage, px, py + 2, bg, fg);
+
+        px = gridWidth / 2 - victoryMessage2.length() / 2;
+        drawString(g, victoryMessage2, px, py + 3, bg, fg);
+
+        px = gridWidth / 2 - victoryMessage3.length() / 2;
+        drawString(g, victoryMessage3, px, py + 4, bg, fg);
+
+        String victoryLabel = "VICTORY!";
+        px = gridWidth / 2 - victoryLabel.length() / 2;
+        drawString(g, victoryLabel,px, py, bg, Color.GREEN);
     }
 
     private boolean withinBounds(Position2D pos) {

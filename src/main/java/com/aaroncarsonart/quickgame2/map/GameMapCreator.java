@@ -1,6 +1,9 @@
 package com.aaroncarsonart.quickgame2.map;
 
 import com.aaroncarsonart.quickgame2.Constants;
+import com.aaroncarsonart.quickgame2.inventory.Item;
+import com.aaroncarsonart.quickgame2.inventory.ItemCreator;
+import com.aaroncarsonart.quickgame2.inventory.Orb;
 import com.aaroncarsonart.quickgame2.monster.Monster;
 import com.aaroncarsonart.quickgame2.monster.MonsterCreator;
 import imbroglio.Difficulty;
@@ -8,7 +11,10 @@ import imbroglio.Maze;
 import imbroglio.Position2D;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -18,22 +24,33 @@ public class GameMapCreator {
     private static int nextType = 0;
     private static int nextColor = 2;
 
-    public static GameMap createGameMap(int width, int height) {
-        GameMap gameMap = new GameMap(width, height);
+    private static Map<Integer, Orb> orbLocations = loadOrbLocations();
 
-        MapType[] mapTypes = MapType.values();
-        // int nextType = rng.nextInt(mapTypes.length);
-        MapType mapType = mapTypes[nextType];
-        generateMapType(gameMap, mapType);
+    public static Map<Integer, Orb> loadOrbLocations() {
+        Map<Integer, Orb> orbLocations = new HashMap<>();
+        List<Orb> orbs = ItemCreator.loadOrbs();
 
-//        ColorSet[] colorSets = ColorSet.values();
-////        nextColor = rng.nextInt(colorSets.length);
-//        ColorSet colorSet = colorSets[nextColor];
-//        gameMap.setColorSet(colorSet);
+        List<Integer> depths = new ArrayList<>();
+        for (int i = 1; i <= 19; i++) {
+            depths.add(i);
+        }
+        List<Integer> depthsToUse = new ArrayList<>();
+        for (int i = 0; i < orbs.size() - 1; i++) {
+            int depth = depths.get(rng.nextInt(depths.size()));
+            depths.add(depth);
+        }
+        depths.add(20);
+        Collections.sort(depthsToUse);
+        for (Integer i : depthsToUse) {
+            System.out.println(i);
+        }
 
-
-
-        return gameMap;
+        for (int i = 0; i < orbs.size(); i++) {
+            int depth = depthsToUse.get(i);
+            Orb orb = orbs.get(i);
+            orbLocations.put(depth, orb);
+        }
+        return orbLocations;
     }
 
     public static GameMap createGameMap(int width, int height, int depth) {
@@ -69,6 +86,7 @@ public class GameMapCreator {
 
         // populate stairs, items, monsters
         List<Position2D> emptyPositions = gameMap.getEmptyPositions();
+
         if (depth != 1) {
             Position2D upPos = emptyPositions.remove(rng.nextInt(emptyPositions.size()));
             Stairs upstairs = new Stairs(upPos, Constants.UPSTAIRS);
@@ -80,6 +98,12 @@ public class GameMapCreator {
             Stairs downstairs = new Stairs(downPos, Constants.DOWNSTAIRS);
             gameMap.setDownstairs(downstairs);
             gameMap.setCell(downPos, downstairs.getSprite());
+        }
+
+        Orb orb = orbLocations.get(depth);
+        if (orb != null) {
+            Position2D orbPos = emptyPositions.remove(rng.nextInt(emptyPositions.size()));
+            gameMap.getItems().put(orbPos, orb);
         }
 
         // ------------------------------------------------

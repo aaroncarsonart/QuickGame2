@@ -18,19 +18,6 @@ public class ItemCreator {
     private static int itemId = 0;
     private static Map<String, Item> items = new HashMap<>();
 
-    public static List<Item> createTestInventory() {
-        List<Item> inventory = new ArrayList<>();
-
-        inventory.add(new Equipment("Longsword", 2, 20, false, EquipmentType.WEAPON,
-                new StatModifier(Stat.ATTACK, 10)));
-        inventory.add(new Equipment("WoodenShield", 3, 10, false, EquipmentType.SHIELD,
-                new StatModifier(Stat.DEFENSE, 3)));
-        inventory.add(new Equipment("Chain Mail", 20, 20, false, EquipmentType.ARMOR,
-                new StatModifier(Stat.DEFENSE, 10)));
-
-        return inventory;
-    }
-
     public static List<Item> loadEquipmentFromCSV() {
         List<Item> inventory = new ArrayList<>();
         ClassLoader classLoader = ItemCreator.class.getClassLoader();
@@ -132,6 +119,18 @@ public class ItemCreator {
         } catch (FileNotFoundException e) {
             System.err.println(e);
         }
+        return inventory;
+    }
+
+    public static List<Orb> loadOrbs() {
+        List<Orb> inventory = new ArrayList<>();
+
+        inventory.add(new Orb(OrbType.YELLOW));
+        inventory.add(new Orb(OrbType.GREEN));
+        inventory.add(new Orb(OrbType.BLUE));
+        inventory.add(new Orb(OrbType.PURPLE));
+        inventory.add(new Orb(OrbType.RED));
+
         return inventory;
     }
 

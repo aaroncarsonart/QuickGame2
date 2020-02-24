@@ -75,4 +75,8 @@ public class Item implements Comparable<Item> {
         return "Item";
     }
 
+    public char getSprite() {
+        return '?';
+    }
+
 }
