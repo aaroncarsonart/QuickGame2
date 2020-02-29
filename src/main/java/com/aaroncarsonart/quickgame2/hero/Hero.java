@@ -1,12 +1,16 @@
 package com.aaroncarsonart.quickgame2.hero;
 
+import com.aaroncarsonart.quickgame2.inventory.Equipment;
+import com.aaroncarsonart.quickgame2.inventory.EquipmentType;
 import com.aaroncarsonart.quickgame2.inventory.Inventory;
 import com.aaroncarsonart.quickgame2.monster.Battler;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class Hero implements Battler {
 
@@ -39,12 +43,12 @@ public class Hero implements Battler {
 
     // placeholder equipment
 
-    private String weapon = "Longsword";
-    private String shield = "Wooden Shield";
-    private String armor = "Chain Mail";
-    private String helmet = "Leather Cap";
-    private String etc1 = "Gold Earring";
-    private String etc2 = "Silver Necklace";
+    private Equipment weapon;
+    private Equipment shield;
+    private Equipment armor;
+    private Equipment helmet;
+    private Equipment etc1;
+    private Equipment etc2;
 
     Map<Stat, List<StatModifier>> statModifiers;
 
@@ -261,56 +265,56 @@ public class Hero implements Battler {
         this.gold = gold;
     }
 
-    public String getWeapon() {
+    public Equipment getWeapon() {
         return weapon;
     }
 
-    public void setWeapon(String weapon) {
+    public void setWeapon(Equipment weapon) {
         this.weapon = weapon;
     }
 
-    public String getShield() {
+    public Equipment getShield() {
         return shield;
     }
 
-    public void setShield(String shield) {
+    public void setShield(Equipment shield) {
         this.shield = shield;
     }
 
-    public String getArmor() {
+    public Equipment getArmor() {
         return armor;
     }
 
-    public void setArmor(String armor) {
+    public void setArmor(Equipment armor) {
         this.armor = armor;
     }
 
-    public String getHelmet() {
+    public Equipment getHelmet() {
         return helmet;
     }
 
-    public void setHelmet(String helmet) {
+    public void setHelmet(Equipment helmet) {
         this.helmet = helmet;
     }
 
-    public String getEtc1() {
+    public Equipment getEtc1() {
         return etc1;
     }
 
-    public void setEtc1(String etc1) {
+    public void setEtc1(Equipment etc1) {
         this.etc1 = etc1;
     }
 
-    public String getEtc2() {
+    public Equipment getEtc2() {
         return etc2;
     }
 
-    public void setEtc2(String etc2) {
+    public void setEtc2(Equipment etc2) {
         this.etc2 = etc2;
     }
 
     public int getAttack() {
-        int base = strength;
+        int base = getModifiedStrength();
         int modifiers = statModifiers.get(Stat.ATTACK).stream()
                 .mapToInt(StatModifier::getModifier)
                 .sum();
@@ -318,7 +322,7 @@ public class Hero implements Battler {
     }
 
     public int getDefense() {
-        int base = stamina;
+        int base = getModifiedStamina();
         int modifiers = statModifiers.get(Stat.DEFENSE).stream()
                 .mapToInt(StatModifier::getModifier)
                 .sum();
@@ -326,7 +330,7 @@ public class Hero implements Battler {
     }
 
     public int getAccuracy() {
-        int base = strength / 2 + agility / 2;
+        int base = getModifiedStrength() / 2 + getModifiedAgility() / 2;
         int modifiers = statModifiers.get(Stat.ACCURACY).stream()
                 .mapToInt(StatModifier::getModifier)
                 .sum();
@@ -334,7 +338,7 @@ public class Hero implements Battler {
     }
 
     public int getEvade() {
-        int base = agility;
+        int base = getModifiedAgility();
         int modifiers = statModifiers.get(Stat.EVADE).stream()
                 .mapToInt(StatModifier::getModifier)
                 .sum();
@@ -348,4 +352,68 @@ public class Hero implements Battler {
     public void setInventory(Inventory inventory) {
         this.inventory = inventory;
     }
+
+    public Equipment equipItem(Equipment newEquipment, EquipmentType type, int etcSlot) {
+        Hero hero = this;
+        Equipment prevEquipment = null;
+        switch (type) {
+            case WEAPON:
+                prevEquipment = hero.getWeapon();
+                hero.setWeapon(newEquipment);
+                break;
+            case SHIELD:
+                prevEquipment = hero.getShield();
+                hero.setShield(newEquipment);
+                break;
+            case ARMOR:
+                prevEquipment = hero.getArmor();
+                hero.setArmor(newEquipment);
+                break;
+            case HELMET:
+                prevEquipment = hero.getHelmet();
+                hero.setHelmet(newEquipment);
+                break;
+            case ETC:
+                if (etcSlot == 1) {
+                    prevEquipment = hero.getEtc1();
+                    hero.setEtc1(newEquipment);
+                } else if (etcSlot == 2) {
+                    prevEquipment = hero.getEtc2();
+                    hero.setEtc1(newEquipment);
+                }
+                break;
+        }
+        if (prevEquipment != null) {
+            for (StatModifier modifier : prevEquipment.getStatModifiers().values()) {
+                statModifiers.get(modifier.getStat()).remove(modifier);
+//                Iterator<StatModifier> it = statModifiers.get(modifier.getStat()).iterator();
+//                while(it.hasNext()) {
+//                    StatModifier m2 = it.next();
+//                    if (modifier == m2) {
+//                        it.remove();
+//                    }
+//                }
+            }
+        }
+        if (newEquipment != null) {
+            for (StatModifier modifier : newEquipment.getStatModifiers().values()) {
+                statModifiers.get(modifier.getStat()).add(modifier);
+            }
+        }
+        return prevEquipment;
+    }
+
+    public int getStatValue(Stat stat) {
+        switch(stat) {
+            case STRENGTH: return getModifiedStrength();
+            case AGILITY: return getModifiedAgility();
+            case STAMINA: return getModifiedStamina();
+            case INTELLIGENCE: return getModifiedIntelligence();
+            case WISDOM: return getModifiedWisdom();
+            case CHARISMA: return getModifiedCharisma();
+            default: return 0;
+        }
+    }
+
+
 }

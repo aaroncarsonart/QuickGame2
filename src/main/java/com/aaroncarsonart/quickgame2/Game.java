@@ -1,15 +1,23 @@
 package com.aaroncarsonart.quickgame2;
 
+import com.aaroncarsonart.quickgame2.hero.Experience;
 import com.aaroncarsonart.quickgame2.hero.Hero;
 import com.aaroncarsonart.quickgame2.hero.HeroCreator;
+import com.aaroncarsonart.quickgame2.inventory.Equipment;
 import com.aaroncarsonart.quickgame2.inventory.Inventory;
+import com.aaroncarsonart.quickgame2.inventory.Item;
+import com.aaroncarsonart.quickgame2.inventory.RecoveryItem;
 import com.aaroncarsonart.quickgame2.map.GameMap;
 import com.aaroncarsonart.quickgame2.map.GameMapCreator;
 import com.aaroncarsonart.quickgame2.menu.Callback;
 import com.aaroncarsonart.quickgame2.menu.CenterMenuView;
+import com.aaroncarsonart.quickgame2.menu.ConfirmMenu;
 import com.aaroncarsonart.quickgame2.menu.ConsoleMenu;
 import com.aaroncarsonart.quickgame2.menu.ConsoleMenuView;
+import com.aaroncarsonart.quickgame2.menu.EquipmentMenuView;
 import com.aaroncarsonart.quickgame2.menu.InventoryMenuView;
+import com.aaroncarsonart.quickgame2.menu.LevelUpMenu;
+import com.aaroncarsonart.quickgame2.menu.LevelUpMenuView;
 import com.aaroncarsonart.quickgame2.menu.Menu;
 import com.aaroncarsonart.quickgame2.menu.MenuItem;
 import com.aaroncarsonart.quickgame2.menu.MenuLayout;
@@ -37,15 +45,18 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class Game {
@@ -53,6 +64,8 @@ public class Game {
     public static final Color BROWN = new Color(165, 82, 0);
     public static final Color DARK_BROWN = new Color(50, 15, 0);
     public static final Color DARKER_GRAY = new Color(15, 15, 15);
+
+    boolean enableMeta = true;
     boolean drawAllSprites = false;
     boolean drawMonsterPaths = false;
 
@@ -74,8 +87,10 @@ public class Game {
     private int gridWidth = 60;
     private int gridHeight = 40;
 
+    private int hudHeight = 5;
+
     private int mapWidth = gridWidth;
-    private int mapHeight = gridHeight - 3;
+    private int mapHeight = gridHeight - hudHeight;
 
     private int width = gridWidth * tileWidth;
     private int height = gridHeight * tileHeight;
@@ -93,6 +108,12 @@ public class Game {
     private Menu statusMenu;
     private ConsoleMenu renameMenu;
     private Stack<Menu> menuList;
+    private Callback menuCancelCallback = () -> {
+        menuList.pop();
+        if (menuList.empty()) {
+            gameMode = GameMode.MAP;
+        }
+    };
 
     private int messageLogMaxSize = 100;
     private List<LogMessage> messageLog = new ArrayList<>();
@@ -133,7 +154,9 @@ public class Game {
             if (gameMode == GameMode.MENU) {
                 //drawMenus(graphics2D);
                 Menu menu = menuList.peek();
-                menu.getMenuView().render(graphics2D, menu);
+                if (menu.getMenuView() != null) {
+                    menu.getMenuView().render(graphics2D, menu);
+                }
             }
 
             if (gameOver) {
@@ -173,12 +196,6 @@ public class Game {
         // SETUP MENUS
         // ====================================================================
         menuList = new Stack<>();
-        Callback menuCancelCallback = () -> {
-            menuList.pop();
-            if (menuList.empty()) {
-                gameMode = GameMode.MAP;
-            }
-        };
 
         // ------------------------------------------------
         // Setup statusMenu
@@ -221,19 +238,60 @@ public class Game {
         mainMenu.addMenuItem(new MenuItem("Rename Hero", renameMenuCallback));
         mainMenu.addMenuItem(new MenuItem("Status", () -> menuList.push(statusMenu)));
         mainMenu.addMenuItem(new MenuItem("Inventory", () -> menuList.push(createInventoryMenu())));
-        mainMenu.addMenuItem(new MenuItem("Equipment", () -> {}));
+        mainMenu.addMenuItem(new MenuItem("Equipment", () -> menuList.push(createEquipmentMenu())));
         mainMenu.addMenuItem(new MenuItem("Save", () -> {}));
         mainMenu.addMenuItem(new MenuItem("Exit", () -> System.exit(0)));
     }
 
-    private Menu createInventoryMenu() {
-        Callback menuCancelCallback = () -> {
-            menuList.pop();
-            if (menuList.empty()) {
-                gameMode = GameMode.MAP;
-            }
-        };
+    private Menu createEquipmentMenu() {
+        Position2D menuOrigin = new Position2D(1, 1);
+        MenuView menuView = new EquipmentMenuView(this, menuOrigin, "Equipment", hero.getInventory());
+        Menu equipmentMenu = new Menu(menuView, MenuLayout.VERTICAL, menuCancelCallback);
+        equipmentMenu.setMaxLength(30);
 
+        Inventory inventory = hero.getInventory();
+
+        Inventory.Slot[] inventorySlots = inventory.getSlots();
+        for (Inventory.Slot slot : inventorySlots) {
+            Item item = slot.getItem();
+            String label = slot.getLabel();
+            if (item != null && item instanceof Equipment) {
+//                Equipment equipment = (Equipment) item;
+//                Callback confirmCallback = () -> {
+//                        equipItem(slot, equipment);
+//                        menuCancelCallback.execute();
+//                };
+//                ConfirmMenu confirmMenu = new ConfirmMenu(null, MenuLayout.VERTICAL, menuCancelCallback, confirmCallback);
+//                equipmentMenu.addMenuItem(new MenuItem(slot::getLabel, () -> menuList.push(confirmMenu)));
+                equipmentMenu.addMenuItem(new MenuItem(slot::getLabel, () -> equipItem(slot, slot::getItem)));
+            } else if (item == null) {
+                // TODO implement unequip menu
+                equipmentMenu.addMenuItem(new MenuItem(label, Color.DARK_GRAY, () -> {}));
+            } else {
+                equipmentMenu.addMenuItem(new MenuItem(label, Color.DARK_GRAY, () -> {}));
+            }
+        }
+        return equipmentMenu;
+    }
+
+    private void equipItem(Inventory.Slot slot, Supplier<Item> supplier) {
+        Item item = supplier.get();
+        if (!(item instanceof Equipment)) {
+            return;
+        }
+        Equipment newEquipment = (Equipment) item;
+        Equipment prevEquipment = hero.equipItem(newEquipment, newEquipment.getType(), 1);
+
+        // update inventory
+        if (prevEquipment != null) {
+            slot.setItem(prevEquipment);
+            slot.setQuantity(1);
+        } else {
+            hero.getInventory().remove(newEquipment, slot);
+        }
+    }
+
+    private Menu createInventoryMenu() {
         Position2D menuOrigin = new Position2D(1, 1);
         MenuView menuView = new InventoryMenuView(this, menuOrigin, "Inventory", hero.getInventory());
         Menu inventoryMenu = new Menu(menuView, MenuLayout.VERTICAL, menuCancelCallback);
@@ -242,11 +300,58 @@ public class Game {
         Inventory inventory = hero.getInventory();
         Inventory.Slot[] inventorySlots = inventory.getSlots();
         for (Inventory.Slot slot : inventorySlots) {
+            Item item = slot.getItem();
             String label = slot.getLabel();
-            inventoryMenu.addMenuItem(new MenuItem(label, () -> {}));
+            if (item != null && slot.getQuantity() > 0) {
+                inventoryMenu.addMenuItem(new MenuItem(slot::getLabel, () -> useItem(slot)));
+            } else {
+                inventoryMenu.addMenuItem(new MenuItem(slot::getLabel, () -> {}));
+            }
         }
         return inventoryMenu;
     }
+
+    private void useItem(Inventory.Slot slot) {
+        if (slot.getQuantity() == 0) {
+            return;
+        }
+        Item item = slot.getItem();
+        if (item instanceof RecoveryItem) {
+            useRecoveryItem((RecoveryItem) item);
+            hero.getInventory().remove(item);
+        }
+    }
+
+    private void useRecoveryItem(RecoveryItem recoveryItem) {
+        LogMessage message = new LogMessage();
+        message.append("Recovered ");
+
+        int health = recoveryItem.getHealth();
+        int mana = recoveryItem.getMana();
+        int energy = recoveryItem.getEnergy();
+        if (health > 0) {
+            int newHealth = Math.min(hero.getMaxHealth(), hero.getHealth() + health);
+            hero.setHealth(newHealth);
+            message.append("+" + health, Color.GREEN);
+            message.append(" HP ");
+        }
+
+        if (mana > 0) {
+            int newMana = Math.min(hero.getMaxMana(), hero.getMana() + mana);
+            hero.setMana(newMana);
+            message.append("+" + mana, Color.RED);
+            message.append(" MP ");
+        }
+
+        if (energy > 0) {
+            double newEnergy = Math.min(hero.getMaxEnergy(), hero.getEnergy() + energy);
+            hero.setEnergy(newEnergy);
+            message.append("+" + ((int) energy), Color.CYAN);
+            message.append(" EP ");
+        }
+        messageLog.add(message);
+    }
+
 
     private void setGameMap(GameMap gameMap) {
         this.gameMap = gameMap;
@@ -337,7 +442,7 @@ public class Game {
                 if (visible[gy][gx] == Constants.UNKNOWN && !drawAllSprites) {
                     bg = Color.BLACK;
                     fg = Color.BLACK;
-                } else if (visible[gy][gx] == Constants.KNOWN) {
+                } else if (visible[gy][gx] == Constants.KNOWN && !drawAllSprites) {
                     if (c == '#') {
                         bg = DARKER_GRAY;
                         fg = Color.GRAY;
@@ -356,8 +461,19 @@ public class Game {
         }
 
         // draw sprites
-//        for (int x = 0; x < mapWidth; x++) {
-//            for (int y = 0; y < mapHeight; y++) {
+
+        // draw items
+        for (Map.Entry<Position2D, Item> entry : gameMap.getItems().entrySet()) {
+            Position2D pos = entry.getKey();
+            Item item = entry.getValue();
+            if (drawAllSprites || visible[pos.y()][pos.x()] == Constants.VISIBLE) {
+                Color color = item.getColor();
+                char sprite = item.getSprite();
+                drawChar(g, sprite, pos.x(), pos.y(), Color.BLACK, color);
+            }
+        }
+
+        // draw monsters
         for (Monster monster : gameMap.getMonsterMap().values()) {
             Position2D pos = monster.getPos();
             if (drawAllSprites || visible[pos.y()][pos.x()] == Constants.VISIBLE) {
@@ -389,7 +505,7 @@ public class Game {
         Color vfg = Color.YELLOW;
 
         int cx = 0;
-        int cy = gridHeight - 3;
+        int cy = gridHeight - hudHeight;
 
         String statLabel, statValue;
 
@@ -427,16 +543,41 @@ public class Game {
         drawString(g, statLabel, cx, cy, bg, fg);
         cx += statLabel.length();
         statValue = String.valueOf(Double.valueOf(hero.getEnergy()).intValue());
-        drawString(g, statValue, cx, cy, vbg, Color.CYAN);
+        drawString(g, statValue, cx, cy, vbg, Color.BLUE);
         cx += statValue.length();
 
         statLabel = "/";
         drawString(g, statLabel, cx, cy, bg, fg);
         cx += statLabel.length();
         statValue = String.valueOf(hero.getModifiedMaxEnergy());
+        drawString(g, statValue, cx, cy, vbg, Color.BLUE);
+        cx = 0;
+        cy += 1;
+
+        statLabel = "XP: ";
+        drawString(g, statLabel, cx, cy, bg, fg);
+        cx += statLabel.length();
+        statValue = String.valueOf(Double.valueOf(hero.getExp()).intValue());
+        drawString(g, statValue, cx, cy, vbg, Color.CYAN);
+        cx += statValue.length();
+
+        statLabel = "/";
+        drawString(g, statLabel, cx, cy, bg, fg);
+        cx += statLabel.length();
+        statValue = String.valueOf(Experience.TABLE[hero.getLevel() + 1]);
         drawString(g, statValue, cx, cy, vbg, Color.CYAN);
         cx = 0;
         cy += 1;
+
+        statLabel = "GP: ";
+        drawString(g, statLabel, cx, cy, bg, fg);
+        cx += statLabel.length();
+        statValue = String.valueOf(Double.valueOf(hero.getGold()).intValue());
+        drawString(g, statValue, cx, cy, vbg, Color.YELLOW);
+        cx += statValue.length();
+        cy += 1;
+
+
 
         statValue = String.valueOf(gameMap.getDepth());
         cx = gridWidth - statValue.length();
@@ -457,8 +598,8 @@ public class Game {
 
 
         // draw last 3 status messages
-        int xStatusOffset = 12;
-        int limit = Math.min(messageLog.size(), 3);
+        int xStatusOffset = 13;
+        int limit = Math.min(messageLog.size(), hudHeight);
         cx = xStatusOffset;
         cy = gridHeight - 1;
         for (int i = 0; i < limit; i++) {
@@ -494,7 +635,8 @@ public class Game {
                 }
             }
             public void keyPressed(KeyEvent e) {
-                switch (e.getKeyCode()) {
+                int keyCode = e.getKeyCode();
+                switch (keyCode) {
                     case KeyEvent.VK_SHIFT:
                         System.out.println("shift pressed");
                         shiftDown = true;
@@ -512,14 +654,14 @@ public class Game {
                         break;
                     case KeyEvent.VK_COMMA:
                         playerAction = PlayerAction.UNKNOWN;
-                        if (metaDown) {
+                        if (enableMeta && metaDown) {
                             upstairs();
                             canvas.repaint();
                         }
                         break;
                     case KeyEvent.VK_PERIOD:
                         playerAction = PlayerAction.UNKNOWN;
-                        if (metaDown) {
+                        if (enableMeta && metaDown) {
                             downstairs();
                             canvas.repaint();
                         }
@@ -538,7 +680,27 @@ public class Game {
                         break;
                     case KeyEvent.VK_RIGHT:
                     case KeyEvent.VK_L:
-                        playerAction = PlayerAction.RIGHT;
+                        if (shiftDown && keyCode == KeyEvent.VK_L) {
+                            playerAction = PlayerAction.TOGGLE_AUTO_LOOT;
+                        } else if (enableMeta && metaDown && keyCode == KeyEvent.VK_L) {
+                            playerAction = PlayerAction.CHEAT_LEVEL_UP;
+                        } else {
+                            playerAction = PlayerAction.RIGHT;
+                        }
+                        break;
+                    case KeyEvent.VK_C:
+                        if (metaDown) {
+                            playerAction = PlayerAction.CHEAT_COLLECT_ITEMS;
+                        } else {
+                            playerAction = PlayerAction.UNKNOWN;
+                        }
+                        break;
+                    case KeyEvent.VK_M:
+                        if (metaDown) {
+                            playerAction = PlayerAction.CHEAT_DRAW_ALL_SPRITES;
+                        } else {
+                            playerAction = PlayerAction.UNKNOWN;
+                        }
                         break;
                     case KeyEvent.VK_ENTER:
                     case KeyEvent.VK_Z:
@@ -554,14 +716,14 @@ public class Game {
                     case KeyEvent.VK_Q:
                         playerAction = PlayerAction.QUIT;
                         break;
-                    case KeyEvent.VK_M:
-                        playerAction = PlayerAction.MOVE_MENU;
-                        break;
                     case KeyEvent.VK_S:
                         playerAction = PlayerAction.STATUS_MENU;
                         break;
                     case KeyEvent.VK_I:
                         playerAction = PlayerAction.INVENTORY_MENU;
+                        break;
+                    case KeyEvent.VK_E:
+                        playerAction = PlayerAction.EQUIPMENT_MENU;
                         break;
 //                    case KeyEvent.VK_R:
 //                        playerAction = PlayerAction.UNKNOWN;
@@ -608,6 +770,26 @@ public class Game {
                     case WAIT:
                         updated = true;
                         break;
+                    case TOGGLE_AUTO_LOOT:
+                        toggleAutoLoot();
+                        updated = true;
+                        break;
+                    case CHEAT_COLLECT_ITEMS:
+                        for (Item item : gameMap.getItems().values()) {
+                            hero.getInventory().add(item);
+                        }
+                        gameMap.getItems().clear();
+                        messageLog.add(new LogMessage("Collected items on this floor."));
+                        updated = true;
+                        break;
+                    case CHEAT_LEVEL_UP:
+                        hero.setExp(Experience.TABLE[hero.getLevel() + 1]);
+                        updated = true;
+                        break;
+                    case CHEAT_DRAW_ALL_SPRITES:
+                        drawAllSprites = !drawAllSprites;
+                        updated = true;
+                        break;
                     case STATUS_MENU:
                         gameMode = GameMode.MENU;
                         menuList.push(statusMenu);
@@ -616,6 +798,11 @@ public class Game {
                     case INVENTORY_MENU:
                         gameMode = GameMode.MENU;
                         menuList.push(createInventoryMenu());
+                        updated = true;
+                        break;
+                    case EQUIPMENT_MENU:
+                        gameMode = GameMode.MENU;
+                        menuList.push(createEquipmentMenu());
                         updated = true;
                         break;
                     case MOVE_MENU:
@@ -634,9 +821,20 @@ public class Game {
             break;
         }
         if (updated) {
-            tick();
+            if (gameMode == GameMode.MAP) {
+                tick();
+            }
             canvas.repaint();
         }
+    }
+
+    private void toggleAutoLoot() {
+        autoLootItems = !autoLootItems;
+        LogMessage message = new LogMessage();
+        message.append("Auto-loot mode ");
+        message.append(autoLootItems ? "enabled" : "disabled", Color.YELLOW);
+        message.append(".");
+        messageLog.add(message);
     }
 
     private boolean moveMap(PlayerAction playerAction) {
@@ -652,7 +850,7 @@ public class Game {
                 char c = charGrid[next.y()][next.x()];
                 passable = ".+<>".indexOf(c) != -1 && !occupiedByMonster;
             }
-            if (withinBounds && (passable || metaDown)) {
+            if (withinBounds && (passable || (enableMeta && (metaDown && !occupiedByMonster)))) {
                 heroPos = next;
                 fov(heroPos, FIELD_OF_VIEW_RANGE);
                 updated = true;
@@ -724,20 +922,38 @@ public class Game {
             return;
         }
         int damage = hero.attack(monster);
+
+        // hack to easy-kill monsters in dev testing
+        if (1 + rng.nextInt(100) == 100 || enableMeta && metaDown) {
+            damage = monster.getMaxHealth();
+            int newHealth = Math.max(0, monster.getHealth() - damage);
+            monster.setHealth(newHealth);
+            messageLog.add(new LogMessage("Perfect Strike!", Color.GREEN));
+        }
+
         if (damage == 0) {
             LogMessage message = new LogMessage();
-            message.append("Missed the ") ;
-            message.append(monster.getName(), Color.YELLOW);
+            message.append("You missed the ") ;
+            message.append(monster.getName(), monster.getColor());
             message.append(".") ;
             messageLog.add(message);
         } else {
+            if (damage == -1) {
+                messageLog.add(new LogMessage("Critical Hit!", Color.GREEN));
+                damage = hero.getCriticalHitDamage(monster);
+                int newHealth = Math.max(0, monster.getHealth() - damage);
+                monster.setHealth(newHealth);
+            }
             LogMessage message = new LogMessage();
-            message.append("Dealt the ");
-            message.append(monster.getName(), Color.YELLOW);
+            message.append("You dealt the ");
+            message.append(monster.getName(), monster.getColor());
             message.append(" ");
             message.append("" + damage, Color.RED);
             message.append(" damage!");
             messageLog.add(message);
+
+            int aggression = Math.min(monster.getAggression() + 1 + rng.nextInt(5), 10);
+            monster.setAggression(aggression);
         }
         if (monster.getHealth() <= 0) {
             gameMap.getMonsterMap().remove(monster.getPos());
@@ -746,7 +962,7 @@ public class Game {
 
             LogMessage message = new LogMessage();
             message.append("Defeated the ");
-            message.append(monster.getName(), Color.YELLOW);
+            message.append(monster.getName(), monster.getColor());
             message.append("!");
             messageLog.add(message);
             message = new LogMessage();
@@ -824,6 +1040,11 @@ public class Game {
     private boolean okAction() {
         boolean updated = false;
         char c = gameMap.getCell(heroPos);
+        // ------------------------------------------------
+        // handle items
+        // ------------------------------------------------
+        updated = collectItem();
+
 
         // ------------------------------------------------
         // handle stairs
@@ -838,8 +1059,26 @@ public class Game {
             updated = true;
         }
 
+
         return updated;
     }
+
+    private boolean collectItem() {
+        Item item = gameMap.getItems().get(heroPos);
+        if (item != null) {
+            gameMap.getItems().remove(heroPos);
+            hero.getInventory().add(item);
+            LogMessage logMessage = new LogMessage();
+            logMessage.append("You pick up the ");
+            logMessage.append(item.getName(), Color.YELLOW);
+            logMessage.append(".");
+            messageLog.add(logMessage);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean autoLootItems = true;
 
     /**
      * Update all non-heroPos entities here.
@@ -851,10 +1090,68 @@ public class Game {
             messageLog.add(new LogMessage("Stairs are leading up."));
         } else if (heroTile == '>') {
             messageLog.add(new LogMessage("Stairs are leading down."));
+        } else if (gameMap.getItems().get(heroPos) != null) {
+            if (autoLootItems) {
+                collectItem();
+            } else {
+                String itemName = gameMap.getItems().get(heroPos).getName();
+                messageLog.add(new LogMessage(itemName + " lies below you."));
+            }
         }
 //        else if (heroTile == '+') {
 //            messageLog.add(new LogMessage("You're standing in a doorway."));
 //        }
+
+        // spot new monsters
+        Map<Monster, Integer> monstersSeen = new HashMap<>();
+        for (int x = 0; x < mapWidth; x++) {
+            for (int y = 0; y < mapHeight; y++) {
+                if (visible[y][x] == Constants.VISIBLE) {
+                    Position2D pos = new Position2D(x, y);
+                    Monster monster = gameMap.getMonsterMap().get(pos);
+                    if (monster != null && !monster.isSeen()) {
+                        monster.setSeen(true);
+                        if (monstersSeen.get(monster) == null) {
+                            monstersSeen.put(monster, 1);
+                        } else {
+                            monstersSeen.put(monster, monstersSeen.get(monster) + 1);
+                        }
+                    }
+                }
+            }
+        }
+        for (Map.Entry<Monster, Integer> entry : monstersSeen.entrySet()) {
+            Monster monster = entry.getKey();
+            int count = entry.getValue();
+
+            String monsterName = monster.getName();
+            String countStr;
+            String plural;
+            String wasWere;
+            if (count == 1) {
+                plural = "";
+                wasWere = "was";
+                if ("aeiou".indexOf(monsterName.charAt(0)) == -1) {
+                    countStr = "An ";
+                } else {
+                    countStr = "A ";
+                }
+            } else {
+                countStr = count + " ";
+                wasWere = "were";
+                if (monsterName.charAt(monsterName.length() - 1) == 's') {
+                    plural = "es";
+                } else {
+                    plural = "s";
+                }
+            }
+
+            LogMessage message = new LogMessage();
+            message.append(countStr);
+            message.append(monsterName + plural, Color.RED);
+            message.append(" "+ wasWere + " spotted!");
+        }
+
         updateHero();
         updateMonsters();
         checkForGameOver();
@@ -863,6 +1160,48 @@ public class Game {
 
     private void updateHero() {
         hero.setEnergy(hero.getEnergy() - (0.05 - 0.001 * hero.getStamina()));
+
+        if (hero.getEnergy() == 50) {
+            messageLog.add(new LogMessage("You begin to sweat."));
+        } else if (hero.getEnergy() == 25) {
+            messageLog.add(new LogMessage("You feel exhausted."));
+        } else if (hero.getEnergy() == 12) {
+            messageLog.add(new LogMessage("It's difficult to stand."));
+        } else if (hero.getEnergy() == 5) {
+            messageLog.add(new LogMessage("You're about to collapse."));
+        }
+
+        // handle level-up
+        if (hero.getExp() >= Experience.TABLE[hero.getLevel() + 1]) {
+            hero.setLevel(hero.getLevel() + 1);
+
+            int gainedHp = 1 + rng.nextInt(10) + hero.getModifiedStamina() / 2;
+            hero.setMaxHealth(hero.getMaxHealth() + gainedHp);
+            hero.setHealth(hero.getHealth() + gainedHp);
+
+            int gainedMp = 1 + rng.nextInt(5) + hero.getModifiedWisdom() / 2;
+            hero.setMaxMana(hero.getMaxMana() + gainedMp);
+            hero.setMana(hero.getMana() + gainedMp);
+
+//            int gainedEp = 1 + rng.nextInt(10) + hero.getModifiedStrength() / 4 + hero.getModifiedStamina() / 4;
+//            hero.setMaxEnergy(hero.getMaxEnergy() + gainedEp);
+//            hero.setEnergy(hero.getEnergy() + gainedEp);
+
+            gameMode = GameMode.MENU;
+            menuList.push(createLevelUpMenu());
+        }
+    }
+
+    public Menu createLevelUpMenu() {
+        Position2D origin = new Position2D(1, 1);
+        LevelUpMenuView menuView = new LevelUpMenuView(this, origin, "Level Up!");
+        int statPoints = hero.getLevel() / 2 + hero.getModifiedIntelligence() / 2;
+        Menu menu = new LevelUpMenu(menuView, MenuLayout.VERTICAL, this, statPoints);
+        return menu;
+    }
+
+    public Callback getMenuCancelCallback() {
+        return menuCancelCallback;
     }
 
     private void updateMonsters() {
@@ -883,7 +1222,7 @@ public class Game {
                 } else {
                     newPos = getEmptyNeighboringPosition(monsterPos);
                 }
-                if (newPos != null) {
+                if (newPos != null && !newPos.equals(heroPos)) {
                     gameMap.getMonsterMap().remove(monsterPos);
                     gameMap.getMonsterMap().put(newPos, monster);
                     monster.setPos(newPos);
@@ -914,10 +1253,16 @@ public class Game {
                             int damage = monster.attack(hero);
                             if (damage == 0) {
                                 LogMessage message = new LogMessage();
-                                message.append(monster.getName(), Color.YELLOW);
+                                message.append(monster.getName(), monster.getColor());
                                 message.append(" missed you.") ;
                                 messageLog.add(message);
                             } else {
+                                if (damage == -1) {
+                                    messageLog.add(new LogMessage("Critical Hit!", Color.RED));
+                                    damage = monster.getCriticalHitDamage(hero);
+                                    int newHealth = Math.max(0, hero.getHealth() - damage);
+                                    hero.setHealth(newHealth);
+                                }
                                 LogMessage message = new LogMessage();
                                 message.append(monster.getName(), monster.getColor());
                                 message.append(" dealt you ");
@@ -933,7 +1278,6 @@ public class Game {
                             monster.setPos(newPos);
                         }
                     }
-
                 }
                 // ----------------------------------------
                 // aggression failed, just move randomly
@@ -946,13 +1290,17 @@ public class Game {
                     } else {
                         newPos = getEmptyNeighboringPosition(monsterPos);
                     }
-                    if (newPos != null) {
+                    if (newPos != null && !newPos.equals(heroPos)) {
                         gameMap.getMonsterMap().remove(monsterPos);
                         gameMap.getMonsterMap().put(newPos, monster);
                         monster.setPos(newPos);
                     }
                 }
             }
+
+            // update aggression
+            int newAggression = Math.min(monster.getBaseAggression(), monster.getAggression() - 1);
+            monster.setAggression(newAggression);
         }
     }
 
@@ -1099,15 +1447,19 @@ public class Game {
         return direction;
     }
 
-
     private Position2D getEmptyNeighboringPosition(Position2D pos) {
         List<Position2D> neighbors = pos.getNeighbors();
         Iterator<Position2D> it = neighbors.iterator();
         while (it.hasNext()) {
             Position2D next = it.next();
-            char c = charGrid[next.y()][next.x()];
-            if ("#+".indexOf(c) != -1 ||
-                    gameMap.getMonsterMap().get(next) != null) {
+            if (withinBounds(next)) {
+                char c = charGrid[next.y()][next.x()];
+                if ("#+".indexOf(c) != -1 ||
+                        next.equals(heroPos) ||
+                        gameMap.getMonsterMap().get(next) != null) {
+                    it.remove();
+                }
+            } else {
                 it.remove();
             }
         }
@@ -1143,8 +1495,8 @@ public class Game {
         MenuView menuView = new CenterMenuView(this);
         menuView.drawMenuBorders(g, origin, pw, ph);
 
-        for (int x = px; x < pw; x++) {
-            for (int y = py; y < ph; y++) {
+        for (int x = px; x < px + pw; x++) {
+            for (int y = py; y < py + ph; y++) {
                 drawChar(g, ' ', x, y, bg, fg);
             }
         }

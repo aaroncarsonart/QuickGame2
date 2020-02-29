@@ -33,6 +33,8 @@ public class Monster implements Battler {
     private Color color;
     private char sprite;
 
+    private boolean seen;
+
     private List<Position2D> path;
 
     public Monster() {}
@@ -227,6 +229,14 @@ public class Monster implements Battler {
 
     public void setPath(List<Position2D> path) {
         this.path = path;
+    }
+
+    public boolean isSeen() {
+        return seen;
+    }
+
+    public void setSeen(boolean seen) {
+        this.seen = seen;
     }
 
     @Override

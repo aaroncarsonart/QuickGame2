@@ -21,6 +21,11 @@ public class LogMessage {
         append(new ColoredString(message, Color.WHITE));
     }
 
+    public LogMessage(String message, Color color) {
+        this();
+        append(new ColoredString(message, color));
+    }
+
     public List<ColoredString> getMessage() {
         return message;
     }

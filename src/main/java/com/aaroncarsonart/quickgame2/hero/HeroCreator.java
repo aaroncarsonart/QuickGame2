@@ -19,13 +19,13 @@ public class HeroCreator {
         hero.setExp(0);
 
         int health = 0;
-        for (int i = 0; i < 5; i++) {
-            health += 1 + Constants.RNG.nextInt(10);
+        for (int i = 0; i < 3; i++) {
+            health += 1 + Constants.RNG.nextInt(10) + hero.getModifiedStamina() / 2;
         }
         hero.setHealth(health);
         hero.setMaxHealth(health);
 
-        int mana = 5 + Constants.RNG.nextInt(5);
+        int mana = 1 + Constants.RNG.nextInt(5) + hero.getModifiedWisdom() / 2;
         hero.setMana(mana);
         hero.setMaxMana(mana);
 
@@ -40,7 +40,7 @@ public class HeroCreator {
         hero.setWisdom(1);
         hero.setCharisma(1);
 
-        int statPoints = 9;
+        int statPoints = 4 * 6;
         for (int i = 0; i < statPoints; i++) {
             int next = Constants.RNG.nextInt(6);
             if (next == 0) {
@@ -91,19 +91,40 @@ public class HeroCreator {
         // populate mock inventory
         // ---------------------------------------------------------
         Inventory inventory = new Inventory(60);
-        List<Item> itemList = ItemCreator.loadEquipmentFromCSV();
-        for (Item item : itemList) {
-            inventory.add(item);
-        }
-        itemList = ItemCreator.loadRecoveryItemsFromCSV();
-        for (Item item : itemList) {
-            inventory.add(item);
-            inventory.add(item);
-            inventory.add(item);
-            inventory.add(item);
-            inventory.add(item);
-        }
-//        inventory.sort();
+        inventory.add(ItemCreator.ITEM_MAP.get("Herb"));
+        inventory.add(ItemCreator.ITEM_MAP.get("Herb"));
+        inventory.add(ItemCreator.ITEM_MAP.get("Herb"));
+        inventory.add(ItemCreator.ITEM_MAP.get("Herb"));
+        inventory.add(ItemCreator.ITEM_MAP.get("Herb"));
+        inventory.add(ItemCreator.ITEM_MAP.get("Herb"));
+        inventory.add(ItemCreator.ITEM_MAP.get("Herb"));
+        inventory.add(ItemCreator.ITEM_MAP.get("Herb"));
+        inventory.add(ItemCreator.ITEM_MAP.get("Herb"));
+        inventory.add(ItemCreator.ITEM_MAP.get("Herb"));
+
+        inventory.add(ItemCreator.ITEM_MAP.get("Food"));
+        inventory.add(ItemCreator.ITEM_MAP.get("Food"));
+        inventory.add(ItemCreator.ITEM_MAP.get("Food"));
+        inventory.add(ItemCreator.ITEM_MAP.get("Food"));
+        inventory.add(ItemCreator.ITEM_MAP.get("Food"));
+
+        inventory.add(ItemCreator.ITEM_MAP.get("Drink"));
+        inventory.add(ItemCreator.ITEM_MAP.get("Drink"));
+        inventory.add(ItemCreator.ITEM_MAP.get("Drink"));
+        inventory.add(ItemCreator.ITEM_MAP.get("Drink"));
+        inventory.add(ItemCreator.ITEM_MAP.get("Drink"));
+
+//        inventory.add(ItemCreator.ITEM_MAP.get("Dagger"));
+//        inventory.add(ItemCreator.ITEM_MAP.get("Longsword"));
+//        inventory.add(ItemCreator.ITEM_MAP.get("Buckler"));
+//        inventory.add(ItemCreator.ITEM_MAP.get("Wooden Shield"));
+//        inventory.add(ItemCreator.ITEM_MAP.get("Cloth Cap"));
+//        inventory.add(ItemCreator.ITEM_MAP.get("Leather Helm"));
+//        inventory.add(ItemCreator.ITEM_MAP.get("Clothes"));
+//        inventory.add(ItemCreator.ITEM_MAP.get("Padded Armor"));
+//        inventory.add(ItemCreator.ITEM_MAP.get("Ring of Blessing"));
+//        inventory.add(ItemCreator.ITEM_MAP.get("Ring of Strength"));
+
         hero.setInventory(inventory);
 
         return hero;

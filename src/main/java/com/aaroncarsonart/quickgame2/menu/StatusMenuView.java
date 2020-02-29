@@ -2,6 +2,7 @@ package com.aaroncarsonart.quickgame2.menu;
 
 import com.aaroncarsonart.quickgame2.Game;
 import com.aaroncarsonart.quickgame2.hero.Hero;
+import com.aaroncarsonart.quickgame2.inventory.Equipment;
 import imbroglio.Position2D;
 
 import java.awt.Color;
@@ -138,7 +139,7 @@ public class StatusMenuView extends MenuView {
         statLabel = "Weapon: ";
         game.drawString(g, statLabel, cx, cy, bg, fg);
         cx += statLabel.length();
-        statValue = String.valueOf(hero.getWeapon());
+        statValue = getEquipmentName(hero.getWeapon());
         game.drawString(g, statValue, cx, cy, vbg, vfg);
         cx = menuOrigin.x();
         cy += 1;
@@ -146,7 +147,7 @@ public class StatusMenuView extends MenuView {
         statLabel = "Shield: ";
         game.drawString(g, statLabel, cx, cy, bg, fg);
         cx += statLabel.length();
-        statValue = String.valueOf(hero.getShield());
+        statValue = getEquipmentName(hero.getShield());
         game.drawString(g, statValue, cx, cy, vbg, vfg);
         cx = menuOrigin.x();
         cy += 1;
@@ -154,7 +155,7 @@ public class StatusMenuView extends MenuView {
         statLabel = "Armor:  ";
         game.drawString(g, statLabel, cx, cy, bg, fg);
         cx += statLabel.length();
-        statValue = String.valueOf(hero.getArmor());
+        statValue = getEquipmentName(hero.getArmor());
         game.drawString(g, statValue, cx, cy, vbg, vfg);
         cx = menuOrigin.x();
         cy += 1;
@@ -162,7 +163,7 @@ public class StatusMenuView extends MenuView {
         statLabel = "Helmet: ";
         game.drawString(g, statLabel, cx, cy, bg, fg);
         cx += statLabel.length();
-        statValue = String.valueOf(hero.getHelmet());
+        statValue = getEquipmentName(hero.getHelmet());
         game.drawString(g, statValue, cx, cy, vbg, vfg);
         cx = menuOrigin.x();
         cy += 2;
@@ -170,7 +171,7 @@ public class StatusMenuView extends MenuView {
         statLabel = "Etc1: ";
         game.drawString(g, statLabel, cx, cy, bg, fg);
         cx += statLabel.length();
-        statValue = String.valueOf(hero.getEtc1());
+        statValue = getEquipmentName(hero.getEtc1());
         game.drawString(g, statValue, cx, cy, vbg, vfg);
         cx = menuOrigin.x();
         cy += 1;
@@ -178,7 +179,7 @@ public class StatusMenuView extends MenuView {
         statLabel = "Etc2: ";
         game.drawString(g, statLabel, cx, cy, bg, fg);
         cx += statLabel.length();
-        statValue = String.valueOf(hero.getEtc2());
+        statValue = getEquipmentName(hero.getEtc2());
         game.drawString(g, statValue, cx, cy, vbg, vfg);
         cx = menuOrigin.x();
         cy += 2;
@@ -271,4 +272,12 @@ public class StatusMenuView extends MenuView {
         game.drawString(g, statusString, menuLabelOrigin.x(), menuLabelOrigin.y(), bg, fg);
         drawMenuBorders(g, menuLabelOrigin, statusString.length(), 1);
     }
+
+    private String getEquipmentName(Equipment equipment) {
+        if (equipment == null) {
+            return "<none>";
+        }
+        return equipment.getName();
+    }
 }
+

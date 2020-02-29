@@ -21,9 +21,17 @@ public class Inventory {
             return item;
         }
 
+        public void setQuantity(int quantity) {
+            this.quantity = quantity;
+        }
+
+        public void setItem(Item item) {
+            this.item = item;
+        }
+
         public String getLabel() {
             String label;
-            if (item == null) {
+            if (item == null || quantity == 0) {
                 label = "";
             } else if (quantity > 1) {
 //                label = String.format("x%d %s \n", quantity, item.name);
@@ -78,6 +86,38 @@ public class Inventory {
         }
         return false;
     }
+
+    public boolean remove(Item item) {
+        for (int i = 0; i < size; i++) {
+            Slot slot = slots[i];
+            if (slot.item != null && slot.item.equals(item)) {
+                if (slot.quantity == 1) {
+                    slot.item = null;
+                    slot.quantity = 0;
+                    //slots[i] = new Slot();
+                } else {
+                    slot.quantity -= 1;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean remove(Item item, Slot slot) {
+        if (slot.item != null && slot.item.equals(item)) {
+            if (slot.quantity == 1) {
+                slot.item = null;
+                slot.quantity = 0;
+            } else {
+                slot.quantity -= 1;
+            }
+            return true;
+        }
+        return false;
+    }
+
+
 
     public Slot[] getSlots() {
         return slots;

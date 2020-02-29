@@ -17,9 +17,9 @@ import java.util.List;
 
 public class InventoryMenuView extends MenuView {
 
-    Position2D origin;
-    String header;
-    Inventory inventory;
+    protected Position2D origin;
+    protected String header;
+    protected Inventory inventory;
 
     public InventoryMenuView(Game game, Position2D origin, String header, Inventory inventory) {
         super(game);
@@ -163,7 +163,7 @@ public class InventoryMenuView extends MenuView {
             // render equipment description
             if (item instanceof Equipment) {
                 Equipment equipment = (Equipment) item;
-                for (StatModifier statModifier : equipment.getStatModifiers()) {
+                for (StatModifier statModifier : equipment.getStatModifiers().values()) {
                     value = StringUtils.capitalize(statModifier.getStat().name()) + " ";
                     game.drawString(g, value, cx, cy, bg, fgValue);
                     cx += value.length();

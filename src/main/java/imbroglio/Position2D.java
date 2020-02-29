@@ -21,7 +21,6 @@ public final class Position2D implements Serializable {
     // ************************************************************************
     // Fields
     // ************************************************************************
-    protected static final Random RANDOM = new Random();
     private static final int HASH = 10001000;
     private int x;
     private int y;
@@ -157,14 +156,6 @@ public final class Position2D implements Serializable {
      */
     public void moveDown() {
         y += 1;
-    }
-
-    /**
-     * Move this origin in a random direction.
-     */
-    public void moveRandom() {
-        int next = RANDOM.nextInt(4);
-        move(next);
     }
 
     /**

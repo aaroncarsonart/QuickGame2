@@ -2,6 +2,7 @@ package com.aaroncarsonart.quickgame2.inventory;
 
 import com.sun.xml.internal.ws.util.StringUtils;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Comparator;
 
@@ -11,21 +12,16 @@ public class Item implements Comparable<Item> {
     protected double weight;
     protected int cost;
     protected boolean stackable;
-    protected int id;
+    private boolean addedToMap;
+
+    private int minDepth;
+    private int maxDepth;
 
     public Item(String name, double weight, int cost, boolean stackable) {
         this.name = name;
         this.weight = weight;
         this.cost = cost;
         this.stackable = stackable;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     @Override
@@ -53,6 +49,30 @@ public class Item implements Comparable<Item> {
         return stackable;
     }
 
+    public int getMinDepth() {
+        return minDepth;
+    }
+
+    public void setMinDepth(int minDepth) {
+        this.minDepth = minDepth;
+    }
+
+    public int getMaxDepth() {
+        return maxDepth;
+    }
+
+    public void setMaxDepth(int maxDepth) {
+        this.maxDepth = maxDepth;
+    }
+
+    public boolean isAddedToMap() {
+        return addedToMap;
+    }
+
+    public void setAddedToMap(boolean addedToMap) {
+        this.addedToMap = addedToMap;
+    }
+
     public String toString() {
         return String.format("name=\"%s\",weight=%.1f,cost=%d,stackable=%s",
                 name, weight, cost, stackable);
@@ -75,8 +95,18 @@ public class Item implements Comparable<Item> {
         return "Item";
     }
 
+    public Color getColor() {
+        return Color.WHITE;
+    }
     public char getSprite() {
         return '?';
     }
 
+    /**
+     * Override this method to implement item functionality.
+     * @param target An optional parameter to use.
+     */
+    public void use(Object target) {
+
+    }
 }

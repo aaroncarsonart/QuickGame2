@@ -1,9 +1,11 @@
 package com.aaroncarsonart.quickgame2.map;
 
 import com.aaroncarsonart.quickgame2.Constants;
+import com.aaroncarsonart.quickgame2.inventory.Equipment;
 import com.aaroncarsonart.quickgame2.inventory.Item;
 import com.aaroncarsonart.quickgame2.inventory.ItemCreator;
 import com.aaroncarsonart.quickgame2.inventory.Orb;
+import com.aaroncarsonart.quickgame2.inventory.RecoveryItem;
 import com.aaroncarsonart.quickgame2.monster.Monster;
 import com.aaroncarsonart.quickgame2.monster.MonsterCreator;
 import imbroglio.Difficulty;
@@ -16,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class GameMapCreator {
@@ -37,13 +40,13 @@ public class GameMapCreator {
         List<Integer> depthsToUse = new ArrayList<>();
         for (int i = 0; i < orbs.size() - 1; i++) {
             int depth = depths.get(rng.nextInt(depths.size()));
-            depths.add(depth);
+            depthsToUse.add(depth);
         }
-        depths.add(20);
+        depthsToUse.add(20);
         Collections.sort(depthsToUse);
-        for (Integer i : depthsToUse) {
-            System.out.println(i);
-        }
+//        for (Integer i : depthsToUse) {
+//            System.out.println(i);
+//        }
 
         for (int i = 0; i < orbs.size(); i++) {
             int depth = depthsToUse.get(i);
@@ -87,6 +90,9 @@ public class GameMapCreator {
         // populate stairs, items, monsters
         List<Position2D> emptyPositions = gameMap.getEmptyPositions();
 
+        // ------------------------------------------------
+        // Add stairs
+        // ------------------------------------------------
         if (depth != 1) {
             Position2D upPos = emptyPositions.remove(rng.nextInt(emptyPositions.size()));
             Stairs upstairs = new Stairs(upPos, Constants.UPSTAIRS);
@@ -100,6 +106,9 @@ public class GameMapCreator {
             gameMap.setCell(downPos, downstairs.getSprite());
         }
 
+        // ------------------------------------------------
+        // Add orbs
+        // ------------------------------------------------
         Orb orb = orbLocations.get(depth);
         if (orb != null) {
             Position2D orbPos = emptyPositions.remove(rng.nextInt(emptyPositions.size()));
@@ -110,14 +119,23 @@ public class GameMapCreator {
         // Add monsters
         // ------------------------------------------------
 
+        Predicate<Monster> isValidPredicate;
+        if (depth == 10 || depth == 20) {
+            // use monsters from all previous floors for maze levels
+            isValidPredicate = m -> m.getMinDepth() <= depth;
+        } else {
+            isValidPredicate = m -> m.getMinDepth() <= depth && depth <= m.getMaxDepth();
+        }
         List<Monster> validMonsters = MonsterCreator.MONSTER_LIST.stream()
-                .filter(m -> m.getMinDepth() <= depth && depth <= m.getMaxDepth())
+                .filter(isValidPredicate)
                 .collect(Collectors.toList());
-        int monsterGroupsToAdd = 20;
+
+
+        int monsterGroupsToAdd = 10;
 
         // special handling for dungeons to ensure monsters in rooms;
         if (gameMap.getMapType() == MapType.DUNGEON) {
-            monsterGroupsToAdd = 10;
+            monsterGroupsToAdd = 5;
             List<Position2D> candidatePositions = getCandidateRoomPositions(gameMap, 3);
             while (!candidatePositions.isEmpty() && !validMonsters.isEmpty()) {
                 Monster next = validMonsters.get(rng.nextInt(validMonsters.size()));
@@ -125,7 +143,7 @@ public class GameMapCreator {
                 if (next.getMinEncounter() != next.getMaxEncounter()) {
                     encounter += rng.nextInt(next.getMaxEncounter() - next.getMinEncounter());
                 }
-                for (int j = 0; j < encounter && !candidatePositions.isEmpty(); j++) {
+                for (int j = 0; ((gameMap.getMapType() != MapType.MAZE && (j < encounter)) || (j < 1)) && !candidatePositions.isEmpty(); j++) {
                     Monster monster = next.copy();
                     Position2D pos = candidatePositions.remove(rng.nextInt(candidatePositions.size()));
                     monster.setPos(pos);
@@ -141,13 +159,77 @@ public class GameMapCreator {
             if (next.getMinEncounter() != next.getMaxEncounter()) {
                 encounter += rng.nextInt(next.getMaxEncounter() - next.getMinEncounter());
             }
-            for (int j = 0; j < encounter; j++) {
+            for (int j = 0; ((gameMap.getMapType() != MapType.MAZE && (j < encounter)) || (j < 1)) && !emptyPositions.isEmpty(); j++) {
                 Monster monster = next.copy();
                 Position2D pos = emptyPositions.remove(rng.nextInt(emptyPositions.size()));
                 monster.setPos(pos);
                 gameMap.getMonsterMap().put(pos, monster);
             }
         }
+
+        // ------------------------------------------------
+        // Add items
+        // ------------------------------------------------
+
+        // add recovery items
+        List<Item> candidateItems = ItemCreator.ITEM_LIST.stream()
+                .filter(i -> i instanceof RecoveryItem)
+                .filter(i -> i.getMinDepth() <= depth && depth <= i.getMaxDepth())
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        List<Item> higherLevelItems = ItemCreator.ITEM_LIST.stream()
+                .filter(i -> i instanceof RecoveryItem)
+                .filter(i -> depth < i.getMinDepth())
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        int itemsToAddPerLevel = 1 + rng.nextInt(6);
+
+        for (int i = 0; i < itemsToAddPerLevel && !candidateItems.isEmpty(); i++) {
+            List<Item> items;
+            int chance = 1 + rng.nextInt(20);
+            if (chance == 20) {
+                if (!higherLevelItems.isEmpty()) {
+                    items = higherLevelItems;
+                } else {
+                    items = candidateItems;
+                }
+            } else {
+                items = candidateItems;
+            }
+            Item item = items.get(rng.nextInt(items.size()));
+            Position2D itemPos = emptyPositions.remove(rng.nextInt(emptyPositions.size()));
+            gameMap.getItems().put(itemPos, item);
+        }
+
+        // add equipment
+        candidateItems = ItemCreator.ITEM_LIST.stream()
+                .filter(i -> i instanceof Equipment)
+                .filter(i -> i.getMinDepth() <= depth && depth <= i.getMaxDepth())
+                .filter(i -> !i.isAddedToMap())
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        higherLevelItems = ItemCreator.ITEM_LIST.stream()
+                .filter(i -> i instanceof Equipment)
+                .filter(i -> depth < i.getMinDepth())
+                .filter(i -> !i.isAddedToMap())
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        itemsToAddPerLevel = 1 + rng.nextInt(3);
+
+        for (int i = 0; i < itemsToAddPerLevel && !candidateItems.isEmpty(); i++) {
+            List<Item> items;
+            int chance = 1 + rng.nextInt(20);
+            if (chance == 20) {
+                items = higherLevelItems;
+            } else {
+                items = candidateItems;
+            }
+            Item item = items.remove(rng.nextInt(items.size()));
+            item.setAddedToMap(true);
+            Position2D itemPos = emptyPositions.remove(rng.nextInt(emptyPositions.size()));
+            gameMap.getItems().put(itemPos, item);
+        }
+
         return gameMap;
     }
 

@@ -8,15 +8,33 @@ import java.io.FileNotFoundException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 public class ItemCreator {
 
     private static int itemId = 0;
-    private static Map<String, Item> items = new HashMap<>();
+    public static Map<String, Item> ITEM_MAP = loadItemsFromCSV();
+    public static List<Item> ITEM_LIST = ITEM_MAP.values().stream()
+            .sorted(Comparator.comparing(Item::getName))
+            .collect(Collectors.toList());
+
+    private static Map<String, Item> loadItemsFromCSV() {
+        Map<String, Item> itemMap = new HashMap<>();
+
+        List<Item> equipment = loadEquipmentFromCSV();
+        List<Item> recoveryItems = loadRecoveryItemsFromCSV();
+
+        equipment.forEach(item -> itemMap.put(item.getName(), item));
+        recoveryItems.forEach(item -> itemMap.put(item.getName(), item));
+
+        return itemMap;
+    }
 
     public static List<Item> loadEquipmentFromCSV() {
         List<Item> inventory = new ArrayList<>();
@@ -42,14 +60,17 @@ public class ItemCreator {
                     continue;
                 }
 
-                int id = Integer.parseInt(valuesMap.get("id"));
+//                int id = Integer.parseInt(valuesMap.get("id"));
                 double weight = Double.parseDouble(valuesMap.get("weight"));
                 int cost = Integer.parseInt(valuesMap.get("cost"));
                 boolean stackable = Boolean.parseBoolean(valuesMap.get("stackable"));
                 EquipmentType type = EquipmentType.valueOf(valuesMap.get("type"));
 
+                int minDepth = Integer.parseInt(valuesMap.get("minDepth"));
+                int maxDepth = Integer.parseInt(valuesMap.get("maxDepth"));
+
                 // read stat modifiers
-                List<StatModifier> statModifiers = new ArrayList<>();
+                LinkedHashMap<Stat, StatModifier> statModifiers = new LinkedHashMap<>();
                 String field;
 
                 for (Stat stat : Stat.values()) {
@@ -58,13 +79,15 @@ public class ItemCreator {
                     if (field != null && field.length() > 0) {
                         int value = Integer.parseInt(field);
                         StatModifier modifier = new StatModifier(stat, value);
-                        statModifiers.add(modifier);
+                        statModifiers.put(stat, modifier);
                     }
                 }
 
                 // build item and add to inventory
                 Equipment equipment = new Equipment(name, weight, cost, stackable, type, statModifiers);
-                equipment.setId(itemId++);
+                equipment.setMinDepth(minDepth);
+                equipment.setMaxDepth(maxDepth);
+//                equipment.setId(itemId++);
                 inventory.add(equipment);
             }
         } catch (URISyntaxException e) {
@@ -99,7 +122,7 @@ public class ItemCreator {
                     continue;
                 }
 
-                int id = Integer.parseInt(valuesMap.get("id"));
+//                int id = Integer.parseInt(valuesMap.get("id"));
                 double weight = Double.parseDouble(valuesMap.get("weight"));
                 int cost = Integer.parseInt(valuesMap.get("cost"));
                 boolean stackable = Boolean.parseBoolean(valuesMap.get("stackable"));
@@ -108,10 +131,13 @@ public class ItemCreator {
                 int mana = Integer.parseInt(valuesMap.get("mana"));
                 int energy = Integer.parseInt(valuesMap.get("energy"));
 
+                int minDepth = Integer.parseInt(valuesMap.get("minDepth"));
+                int maxDepth = Integer.parseInt(valuesMap.get("maxDepth"));
 
                 // build item and add to inventory
                 RecoveryItem item = new RecoveryItem(name, weight, cost, stackable, health, mana, energy);
-                item.setId(itemId++);
+                item.setMinDepth(minDepth);
+                item.setMaxDepth(maxDepth);
                 inventory.add(item);
             }
         } catch (URISyntaxException e) {

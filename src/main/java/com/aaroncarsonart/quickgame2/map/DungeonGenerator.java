@@ -1,5 +1,6 @@
 package com.aaroncarsonart.quickgame2.map;
 
+import com.aaroncarsonart.quickgame2.Constants;
 import imbroglio.Direction;
 import imbroglio.Position2D;
 
@@ -24,7 +25,7 @@ public class DungeonGenerator {
     private int width;
     private int height;
     private char[][] cells;
-    private static Random rng = new Random(1); // Constants.RNG;
+    private static Random rng = Constants.RNG; // Constants.RNG;
 
     private List<Room> rooms;
 
