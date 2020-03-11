@@ -17,15 +17,15 @@ public interface Battler {
     int getAccuracy();
 
     default int attack(Battler target) {
-        int toHit = 1 + rng.nextInt(10);
-        int toDodge = 1 + rng.nextInt(10);
+        int toHit = 1 + rng.nextInt(20);
+        int toDodge = 1 + rng.nextInt(20);
         int accuracy = this.getAccuracy() + toHit;
         int evade = target.getEvade() + toDodge;
 //        if (toDodge == 20) {
 //            return 0;
 //        }
-        if (accuracy > evade || (1 + rng.nextInt(20)) == 20) {
-            if (rng.nextBoolean()) {
+        if (accuracy > evade || toHit == 20) {
+            if (toHit == 20) {
                 return - 1;
             }
             int baseAttack = 1 + rng.nextInt(this.getAttack());

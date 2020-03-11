@@ -23,6 +23,7 @@ public class ItemCreator {
     public static List<Item> ITEM_LIST = ITEM_MAP.values().stream()
             .sorted(Comparator.comparing(Item::getName))
             .collect(Collectors.toList());
+    public static List<Orb> ORBS_LIST = loadOrbs();
 
     private static Map<String, Item> loadItemsFromCSV() {
         Map<String, Item> itemMap = new HashMap<>();

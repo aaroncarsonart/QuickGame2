@@ -6,6 +6,8 @@ import com.aaroncarsonart.quickgame2.hero.HeroCreator;
 import com.aaroncarsonart.quickgame2.inventory.Equipment;
 import com.aaroncarsonart.quickgame2.inventory.Inventory;
 import com.aaroncarsonart.quickgame2.inventory.Item;
+import com.aaroncarsonart.quickgame2.inventory.ItemCreator;
+import com.aaroncarsonart.quickgame2.inventory.Orb;
 import com.aaroncarsonart.quickgame2.inventory.RecoveryItem;
 import com.aaroncarsonart.quickgame2.map.GameMap;
 import com.aaroncarsonart.quickgame2.map.GameMapCreator;
@@ -30,6 +32,7 @@ import com.aaroncarsonart.quickgame2.status.LogMessage;
 import com.aaroncarsonart.quickgame2.util.Bresenham;
 import imbroglio.Direction;
 import imbroglio.Position2D;
+import jdk.nashorn.internal.codegen.MapCreator;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -135,6 +138,13 @@ public class Game {
     boolean victory = false;
     boolean gameOver = false;
     String gameOverMessage = null;
+    Monster gameOverMonster;
+
+    private int attackCount;
+    private int hitCount;
+    private int missCount;
+    private int criticalCount;
+    private int perfectCount;
 
     /**
      * A custom Component for drawing the game graphics to the screen.
@@ -638,17 +648,17 @@ public class Game {
                 int keyCode = e.getKeyCode();
                 switch (keyCode) {
                     case KeyEvent.VK_SHIFT:
-                        System.out.println("shift pressed");
+//                        System.out.println("shift pressed");
                         shiftDown = true;
                         playerAction = PlayerAction.UNKNOWN;
                         break;
                     case KeyEvent.VK_CONTROL:
-                        System.out.println("control pressed");
+//                        System.out.println("control pressed");
                         ctrlDown = true;
                         playerAction = PlayerAction.UNKNOWN;
                         break;
                     case KeyEvent.VK_META:
-                        System.out.println("meta pressed");
+//                        System.out.println("meta pressed");
                         metaDown = true;
                         playerAction = PlayerAction.UNKNOWN;
                         break;
@@ -668,18 +678,22 @@ public class Game {
                         break;
                     case KeyEvent.VK_UP:
                     case KeyEvent.VK_K:
+                    case KeyEvent.VK_W:
                         playerAction = PlayerAction.UP;
                         break;
                     case KeyEvent.VK_DOWN:
                     case KeyEvent.VK_J:
+                    case KeyEvent.VK_S:
                         playerAction = PlayerAction.DOWN;
                         break;
                     case KeyEvent.VK_LEFT:
                     case KeyEvent.VK_H:
+                    case KeyEvent.VK_A:
                         playerAction = PlayerAction.LEFT;
                         break;
                     case KeyEvent.VK_RIGHT:
                     case KeyEvent.VK_L:
+                    case KeyEvent.VK_D:
                         if (shiftDown && keyCode == KeyEvent.VK_L) {
                             playerAction = PlayerAction.TOGGLE_AUTO_LOOT;
                         } else if (enableMeta && metaDown && keyCode == KeyEvent.VK_L) {
@@ -692,7 +706,7 @@ public class Game {
                         if (metaDown) {
                             playerAction = PlayerAction.CHEAT_COLLECT_ITEMS;
                         } else {
-                            playerAction = PlayerAction.UNKNOWN;
+                            playerAction = PlayerAction.STATUS_MENU;
                         }
                         break;
                     case KeyEvent.VK_M:
@@ -716,9 +730,9 @@ public class Game {
                     case KeyEvent.VK_Q:
                         playerAction = PlayerAction.QUIT;
                         break;
-                    case KeyEvent.VK_S:
-                        playerAction = PlayerAction.STATUS_MENU;
-                        break;
+//                    case KeyEvent.VK_C:
+//                        playerAction = PlayerAction.STATUS_MENU;
+//                        break;
                     case KeyEvent.VK_I:
                         playerAction = PlayerAction.INVENTORY_MENU;
                         break;
@@ -913,7 +927,6 @@ public class Game {
             }
         } while (keepMoving);
         return updated;
-
     }
 
     private void fightMonster(Position2D target) {
@@ -921,10 +934,13 @@ public class Game {
         if (monster == null) {
             return;
         }
+
         int damage = hero.attack(monster);
+        attackCount++;
 
         // hack to easy-kill monsters in dev testing
         if (1 + rng.nextInt(100) == 100 || enableMeta && metaDown) {
+            perfectCount++;
             damage = monster.getMaxHealth();
             int newHealth = Math.max(0, monster.getHealth() - damage);
             monster.setHealth(newHealth);
@@ -932,6 +948,7 @@ public class Game {
         }
 
         if (damage == 0) {
+            missCount++;
             LogMessage message = new LogMessage();
             message.append("You missed the ") ;
             message.append(monster.getName(), monster.getColor());
@@ -939,10 +956,13 @@ public class Game {
             messageLog.add(message);
         } else {
             if (damage == -1) {
+                criticalCount++;
                 messageLog.add(new LogMessage("Critical Hit!", Color.GREEN));
                 damage = hero.getCriticalHitDamage(monster);
                 int newHealth = Math.max(0, monster.getHealth() - damage);
                 monster.setHealth(newHealth);
+            } else {
+                hitCount++;
             }
             LogMessage message = new LogMessage();
             message.append("You dealt the ");
@@ -1085,6 +1105,17 @@ public class Game {
      */
     private void tick() {
         turns++;
+        System.out.println();
+//        System.out.println("--------------------------------------------");
+        System.out.println("turn: " + turns);
+//        System.out.println("--------------------------------------------");
+
+        System.out.println("attacks: " + attackCount);
+        System.out.printf("miss%%: %-4d %-4.1f%%\n", missCount, missCount / ((double) attackCount) * 100);
+        System.out.printf("hit%%:  %-4d %-4.1f%%\n", hitCount, hitCount / ((double) attackCount) * 100);
+        System.out.printf("crit%%: %-4d %-4.1f%%\n", criticalCount, criticalCount / ((double) attackCount) * 100);
+        System.out.printf("perf%%: %-4d %-4.1f%%\n", perfectCount, perfectCount / ((double) attackCount) * 100);
+
         char heroTile = charGrid[heroPos.y()][heroPos.x()];
         if (heroTile == '<') {
             messageLog.add(new LogMessage("Stairs are leading up."));
@@ -1253,6 +1284,7 @@ public class Game {
                             int damage = monster.attack(hero);
                             if (damage == 0) {
                                 LogMessage message = new LogMessage();
+                                message.append("The ");
                                 message.append(monster.getName(), monster.getColor());
                                 message.append(" missed you.") ;
                                 messageLog.add(message);
@@ -1507,18 +1539,25 @@ public class Game {
     }
 
     private void checkForVictory() {
-
+        List<Orb> orbs = ItemCreator.ORBS_LIST;
+        boolean victory = true;
+        for (Orb orb : orbs) {
+            victory &= hero.getInventory().contains(orb);
+        }
+        if (victory) {
+            this.victory = true;
+        }
     }
 
     private void drawVictoryScreen(Graphics2D g) {
         String victoryMessage = hero.getName() + " has successfully plundered";
         String victoryMessage2 = "the depths of Capricious Caverns";
-        String victoryMessage3 = "and collected the 5 Orbs of Destiny.";
+        String victoryMessage3 = "and collected the five Orbs of Destiny.";
 
         Color bg = Color.BLACK;
         Color fg = Color.WHITE;
 
-        int pw = Math.max(victoryMessage.length(), victoryMessage3.length());
+        int pw = Math.max(Math.max(victoryMessage.length(), victoryMessage2.length()), victoryMessage3.length());
         int ph = 5;
         int px = gridWidth / 2 - pw / 2;
         int py = gridHeight / 2 - 3;
@@ -1529,8 +1568,8 @@ public class Game {
         MenuView menuView = new CenterMenuView(this);
         menuView.drawMenuBorders(g, origin, pw, ph);
 
-        for (int x = px; x < pw; x++) {
-            for (int y = py; y < ph; y++) {
+        for (int x = px; x < px + pw; x++) {
+            for (int y = py; y < py + ph; y++) {
                 drawChar(g, ' ', x, y, bg, fg);
             }
         }

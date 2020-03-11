@@ -104,6 +104,16 @@ public class Inventory {
         return false;
     }
 
+    public boolean contains(Item item) {
+        for (int i = 0; i < size; i++) {
+            Slot slot = slots[i];
+            if (slot.item != null && slot.item.equals(item)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public boolean remove(Item item, Slot slot) {
         if (slot.item != null && slot.item.equals(item)) {
             if (slot.quantity == 1) {

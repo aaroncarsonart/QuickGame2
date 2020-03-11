@@ -31,7 +31,7 @@ public class GameMapCreator {
 
     public static Map<Integer, Orb> loadOrbLocations() {
         Map<Integer, Orb> orbLocations = new HashMap<>();
-        List<Orb> orbs = ItemCreator.loadOrbs();
+        List<Orb> orbs = ItemCreator.ORBS_LIST;
 
         List<Integer> depths = new ArrayList<>();
         for (int i = 1; i <= 19; i++) {
