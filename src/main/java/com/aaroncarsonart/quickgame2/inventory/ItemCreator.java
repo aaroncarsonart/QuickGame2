@@ -3,17 +3,16 @@ package com.aaroncarsonart.quickgame2.inventory;
 import com.aaroncarsonart.quickgame2.hero.Stat;
 import com.aaroncarsonart.quickgame2.hero.StatModifier;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.stream.Collectors;
 
 public class ItemCreator {
@@ -40,16 +39,15 @@ public class ItemCreator {
     public static List<Item> loadEquipmentFromCSV() {
         List<Item> inventory = new ArrayList<>();
         ClassLoader classLoader = ItemCreator.class.getClassLoader();
-        URL url = classLoader.getResource("equipment.csv");
+        InputStream inputStream = classLoader.getResourceAsStream("equipment.csv");
         try {
-            File file = new File(url.toURI());
-            Scanner scanner = new Scanner(file);
-            String headerLine = scanner.nextLine();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            String headerLine = reader.readLine();
             String[] headers = headerLine.split(",", -1);
             Map<String, String> valuesMap = new HashMap<>();
 
-            while(scanner.hasNextLine()) {
-                String record = scanner.nextLine();
+            while(reader.ready()) {
+                String record = reader.readLine();
                 String[] fields = record.split(",", -1);
                 for (int i = 0; i < headers.length; i++) {
                     valuesMap.put(headers[i], fields[i]);
@@ -91,9 +89,7 @@ public class ItemCreator {
 //                equipment.setId(itemId++);
                 inventory.add(equipment);
             }
-        } catch (URISyntaxException e) {
-            System.err.println(e);
-        } catch (FileNotFoundException e) {
+        } catch (IOException e) {
             System.err.println(e);
         }
         return inventory;
@@ -102,16 +98,15 @@ public class ItemCreator {
     public static List<Item> loadRecoveryItemsFromCSV() {
         List<Item> inventory = new ArrayList<>();
         ClassLoader classLoader = ItemCreator.class.getClassLoader();
-        URL url = classLoader.getResource("recovery_items.csv");
+        InputStream inputStream = classLoader.getResourceAsStream("recovery_items.csv");
         try {
-            File file = new File(url.toURI());
-            Scanner scanner = new Scanner(file);
-            String headerLine = scanner.nextLine();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            String headerLine = reader.readLine();
             String[] headers = headerLine.split(",", -1);
             Map<String, String> valuesMap = new HashMap<>();
 
-            while(scanner.hasNextLine()) {
-                String record = scanner.nextLine();
+            while(reader.ready()) {
+                String record = reader.readLine();
                 String[] fields = record.split(",", -1);
                 for (int i = 0; i < headers.length; i++) {
                     valuesMap.put(headers[i], fields[i]);
@@ -141,9 +136,7 @@ public class ItemCreator {
                 item.setMaxDepth(maxDepth);
                 inventory.add(item);
             }
-        } catch (URISyntaxException e) {
-            System.err.println(e);
-        } catch (FileNotFoundException e) {
+        } catch (IOException e) {
             System.err.println(e);
         }
         return inventory;

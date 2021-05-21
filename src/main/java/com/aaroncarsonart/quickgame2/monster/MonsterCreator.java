@@ -1,15 +1,14 @@
 package com.aaroncarsonart.quickgame2.monster;
 
 import java.awt.Color;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.stream.Collectors;
 
 public class MonsterCreator {
@@ -22,16 +21,15 @@ public class MonsterCreator {
     public static Map<String, Monster> loadMonstersFromCSV() {
         Map<String, Monster> monsterMap = new HashMap<>();
         ClassLoader classLoader = MonsterCreator.class.getClassLoader();
-        URL url = classLoader.getResource("monsters.csv");
+        InputStream inputStream = classLoader.getResourceAsStream("monsters.csv");
         try {
-            File file = new File(url.toURI());
-            Scanner scanner = new Scanner(file);
-            String headerLine = scanner.nextLine();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            String headerLine = reader.readLine();
             String[] headers = headerLine.split(",", -1);
             Map<String, String> valuesMap = new HashMap<>();
 
-            while(scanner.hasNextLine()) {
-                String record = scanner.nextLine();
+            while(reader.ready()) {
+                String record = reader.readLine();
                 String[] fields = record.split(",", -1);
                 for (int i = 0; i < headers.length; i++) {
                     valuesMap.put(headers[i], fields[i]);
@@ -93,36 +91,9 @@ public class MonsterCreator {
 
                 monsterMap.put(name, monster);
             }
-        } catch (URISyntaxException e) {
-            System.err.println(e);
-        } catch (FileNotFoundException e) {
+        } catch (IOException e) {
             System.err.println(e);
         }
         return monsterMap;
-    }
-
-    public static final void main(String[] args) {
-        ClassLoader classLoader = MonsterCreator.class.getClassLoader();
-        URL url = classLoader.getResource("monster.csv");
-        try {
-            File file = new File(url.toURI());
-            Scanner scanner = new Scanner(file);
-            String headerLine = scanner.nextLine();
-            String[] headers = headerLine.split(",", -1);
-            Map<String, String> valuesMap = new HashMap<>();
-
-            while(scanner.hasNextLine()) {
-                String record = scanner.nextLine();
-                String[] fields = record.split(",", -1);
-                for (int i = 0; i < headers.length; i++) {
-                    valuesMap.put(headers[i], fields[i]);
-                }
-            }
-        } catch (URISyntaxException e) {
-            System.err.println(e);
-        } catch (FileNotFoundException e) {
-            System.err.println(e);
-        }
-
     }
 }
