@@ -1,7 +1,6 @@
 package com.aaroncarsonart.quickgame2.menu;
 
 import com.aaroncarsonart.quickgame2.PlayerAction;
-import javafx.scene.input.KeyCode;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;

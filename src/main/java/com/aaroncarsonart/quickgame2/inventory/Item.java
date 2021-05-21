@@ -1,6 +1,6 @@
 package com.aaroncarsonart.quickgame2.inventory;
 
-import com.sun.xml.internal.ws.util.StringUtils;
+import com.aaroncarsonart.quickgame2.util.StringUtils;
 
 import java.awt.Color;
 import java.util.ArrayList;

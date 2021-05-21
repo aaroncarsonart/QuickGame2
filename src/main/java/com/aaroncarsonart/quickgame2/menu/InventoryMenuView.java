@@ -6,9 +6,9 @@ import com.aaroncarsonart.quickgame2.inventory.Equipment;
 import com.aaroncarsonart.quickgame2.inventory.Inventory;
 import com.aaroncarsonart.quickgame2.inventory.Item;
 import com.aaroncarsonart.quickgame2.inventory.RecoveryItem;
-import com.sun.xml.internal.ws.util.StringUtils;
+import com.aaroncarsonart.quickgame2.util.Pair;
+import com.aaroncarsonart.quickgame2.util.StringUtils;
 import imbroglio.Position2D;
-import javafx.util.Pair;
 
 import java.awt.Color;
 import java.awt.Graphics2D;

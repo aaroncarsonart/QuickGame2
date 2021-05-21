@@ -32,7 +32,6 @@ import com.aaroncarsonart.quickgame2.status.LogMessage;
 import com.aaroncarsonart.quickgame2.util.Bresenham;
 import imbroglio.Direction;
 import imbroglio.Position2D;
-import jdk.nashorn.internal.codegen.MapCreator;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
